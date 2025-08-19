@@ -1,0 +1,10 @@
+{
+    "files": ["List.ts"],
+    "compilerOptions": {
+        "target": "esnext",
+        "moduleResolution": "bundler",
+        "declaration": true,
+        "declarationDir": "./",
+        "emitDeclarationOnly": true
+    }
+}
