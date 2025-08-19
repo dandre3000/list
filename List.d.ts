@@ -1,10 +1,3 @@
-/** ListNode instance #data property */
-type ListNodeData<T> = {
-    node: ListNode<T>;
-    listData: ListData<T> | null;
-    previous: ListNodeData<T> | null;
-    next: ListNodeData<T> | null;
-};
 /** A doubly linked list node. */
 export declare class ListNode<T> {
     #private;
@@ -73,15 +66,8 @@ export declare class ListNode<T> {
      */
     remove(): this;
 }
-/** List instance #data property */
-type ListData<T> = {
-    list: List<T>;
-    first: ListNodeData<T> | null;
-    last: ListNodeData<T> | null;
-    length: number;
-};
 /** Doubly linked list */
-export declare class List<T> implements Iterable<T> {
+export declare class List<T> implements Iterable<ListNode<T>> {
     #private;
     static [Symbol.hasInstance](instance: any): boolean;
     /**
@@ -146,12 +132,12 @@ export declare class List<T> implements Iterable<T> {
      */
     pop(): ListNode<T>;
     /**
-     * Remove a node from this list at the given index and return it or null if this is empty.
+     * Remove a node from this list at the given index and return it.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if index is not an integer
      * @throws { RangeError } if index is less than 0 or greater than or equal to this length
      */
-    remove(index: number): ListNodeData<T>;
+    remove(index: number): ListNode<T>;
     /**
      * Remove all nodes in this list.
      * @throws { TypeError } if this is not a List instance
@@ -178,6 +164,29 @@ export declare class List<T> implements Iterable<T> {
      * @throws { RangeError } if index is less than 0 or greater than list length (minus number of nodes to be moved if list === this)
      */
     splice(start: number, end: number, list: List<T>, index: number): List<T>;
+    /**
+     * Move one or more consecutive nodes from a copy of this list and insert them into a new list.
+     * Return the copy of this list.
+     * The range is defined by Math.min(start, end) to Math.max(start, end).
+     * Therefore start or end can be the higher index, (List instance).splice(start, end, ...) and (List instance).splice(end, start, ...) are the same operation.
+     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if start or end is not an integer
+     * @throws { RangeError } if start or end is less than 0 or greater than or equal to this length
+     */
+    toSpliced(start: number, end: number): List<T>;
+    /**
+     * Move one or more consecutive nodes from a copy of this list then insert them back into this or into another list at the given index.
+     * Return the copy of this list.
+     * The range is defined by Math.min(start, end) to Math.max(start, end).
+     * Therefore start or end can be the higher index, (List instance).splice(start, end, ...) and (List instance).splice(end, start, ...) are the same operation.
+     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if start or end is not an integer
+     * @throws { RangeError } if start or end is less than 0 or greater than or equal to this length
+     * @throws { TypeError } if list is not a List instance
+     * @throws { TypeError } if index is not an integer
+     * @throws { RangeError } if index is less than 0 or greater than list length (minus number of nodes to be moved if list === this)
+     */
+    toSpliced(start: number, end: number, list: List<T>, index: number): List<T>;
     /**
      * Set the value of all nodes in this list to the given value.
      * @throws { TypeError } if this is not a List instance
@@ -328,6 +337,5 @@ export declare class List<T> implements Iterable<T> {
      * Return an iterator representng this list.
      * @throws { TypeError } if this is not a List instance
      */
-    [Symbol.iterator](): Iterator<T>;
+    [Symbol.iterator](): ArrayIterator<ListNode<T>>;
 }
-export {};

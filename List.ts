@@ -475,7 +475,7 @@ type ListData<T> = {
 const thisIsNotAList = '"this" is not an instance of List'
 
 /** Doubly linked list */
-export class List<T> implements Iterable<T> {
+export class List<T> implements Iterable<ListNode<T>> {
     static [Symbol.hasInstance] (instance) {
         try { instance.#data } catch (error) { return false }
 
@@ -725,7 +725,7 @@ export class List<T> implements Iterable<T> {
     }
 
     /**
-     * Remove a node from this list at the given index and return it or null if this is empty.
+     * Remove a node from this list at the given index and return it.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if index is not an integer
      * @throws { RangeError } if index is less than 0 or greater than or equal to this length
@@ -793,7 +793,7 @@ export class List<T> implements Iterable<T> {
             nodeData.listData.length--
         }
 
-        return nodeData
+        return nodeData.node
     }
 
     /**
@@ -2007,7 +2007,7 @@ export class List<T> implements Iterable<T> {
      * Return an iterator representng this list.
      * @throws { TypeError } if this is not a List instance
      */
-    [Symbol.iterator] (): Iterator<T> {
+    [Symbol.iterator] (): ArrayIterator<ListNode<T>> {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
 
         const listData = this.#data
@@ -2016,12 +2016,12 @@ export class List<T> implements Iterable<T> {
         if (listData.length === 0)
             return [][Symbol.iterator]()
 
-        const array = new Array<T>(listData.length)
+        const array = new Array<ListNode<T>>(listData.length)
         let nodeData = this.#data.first
         let i = 0
 
         while (nodeData) {
-            array[i] = nodeData.node.value
+            array[i] = nodeData.node
 
             nodeData = nodeData.next
             i++
