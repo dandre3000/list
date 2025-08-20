@@ -50,6 +50,8 @@ lastNode.previous();
 
 ## API
 
+[Click here to view full type definitions](https://github.com/dandre3000/list/blob/main/List.d.ts)
+
 ### ListNode
 
 Represents a node contained in a `List` instance.
@@ -91,7 +93,6 @@ A doubly linked list based on `Array`, with full iterable support.
   - Creates a List with specified length, values are undefined
 - `constructor(...values: T[])`
   - Creates a `List` and inserts the given values
-
 - `first(): ListNode<T>`
   - Returns the first node or `null` if empty
 - `last(): ListNode<T>`
@@ -165,10 +166,4 @@ A doubly linked list based on `Array`, with full iterable support.
 
 ## License
 
-MIT
-
-## Author
-
-[dandre3000](https://github.com/dandre3000)
-
-[View full type definitions](https://github.com/dandre3000/list/blob/main/List.d.ts)
+[MIT](https://github.com/dandre3000/list/blob/main/LICENSE)
