@@ -1,6 +1,7 @@
 {
     "name": "@dandre3000/list",
     "description": "Doubly linked list class and node class.",
+    "license": "MIT",
     "author": {
         "name": "DeAundre Payne",
         "email": "apps.fondling796@passinbox.com",
