@@ -1,8 +1,6 @@
 # list
 
-An npm package for working with linked lists in JavaScript and TypeScript. This package exports two classes: `ListNode` and `List`.  
-**List** is a doubly linked list structure with methods based on the `Array` class with minor adjustments.  
-**ListNode** represents the nodes used by `List`.
+Exports a `List` class that represents a doubly linked list with methods based on the `Array` class, and a `ListNode` class that represents a node that may be contained in a `List`.
 
 ## Installation
 
@@ -47,8 +45,6 @@ lastNode.previous();
 
 ### ListNode
 
-Represents a node contained in a `List` instance.
-
 #### Properties
 
 - `value: T` – The value stored in the node
@@ -77,8 +73,6 @@ Represents a node contained in a `List` instance.
 ---
 
 ### List
-
-A doubly linked list based on `Array`, with full iterable support.
 
 #### Methods
 
