@@ -38,7 +38,7 @@ export class ListNode<T> {
     /**
      * Create a ListNode instance and insert it into a list at the given index.
      * @throws { TypeError } if called without the new operator
-     * @throws { TypeError } if list instanceof List === false
+     * @throws { TypeError } if list is not a List instance
      * @throws { RangeError } if the length of list >= 2 ** 32 - 1
      * @throws { TypeError } if index is not an integer
      * @throws { RangeError } if index is less than 0 or greater than the length of list
@@ -63,8 +63,10 @@ export class ListNode<T> {
             if (listData.length >= maxLength)
                 throw new RangeError('argument list length >= 2 ** 32 - 1')
 
+            if (typeof index !== 'number')
+                throw new TypeError('argument index is not a number')
             if (!Number.isInteger(index))
-                throw new TypeError('argument index is not an integer')
+                throw new RangeError('argument index is not an integer')
             else if (index < 0 || index > listData.length)
                 throw new RangeError('argument index is not valid')
 
@@ -155,7 +157,7 @@ export class ListNode<T> {
 
     /**
      * Return the list containing this node or null if this is not in a list.
-     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if this is not a ListNode instance
      */
     list (): List<T> | null {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
@@ -166,7 +168,7 @@ export class ListNode<T> {
     /**
      * Return the previous node in the list containing this node.
      * Return null if this is the first node in the list or if this is not in a list.
-     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if this is not a ListNode instance
      */
     previous (): ListNode<T> | null {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
@@ -177,7 +179,7 @@ export class ListNode<T> {
     /**
      * Return the next node in the list containing this node.
      * Return null if this is the last node in the list or if this is not in a list.
-     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if this is not a ListNode instance
      */
     next (): ListNode<T> | null {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
@@ -187,8 +189,8 @@ export class ListNode<T> {
 
     /**
      * Remove this node from its containing list and prepend it to another node.
-     * @throws { TypeError } if this instanceof ListNode === false
-     * @throws { TypeError } if node instanceof ListNode === false
+     * @throws { TypeError } if this is not a ListNode instance
+     * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
      * @throws { RangeError } if the node's list length >= 2 ** 32 - 1
      */
@@ -251,8 +253,8 @@ export class ListNode<T> {
 
     /**
      * Remove this node from its containing list and append it to another node.
-     * @throws { TypeError } if this instanceof ListNode === false
-     * @throws { TypeError } if node instanceof ListNode === false
+     * @throws { TypeError } if this is not a ListNode instance
+     * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
      * @throws { RangeError } if the node's list length >= 2 ** 32 - 1
      */
@@ -315,11 +317,11 @@ export class ListNode<T> {
 
     /**
      * Remove this node from its containing list and insert it into another list at the given index.
-     * @throws { TypeError } if this instanceof ListNode === false
-     * @throws { TypeError } if node instanceof ListNode === false
+     * @throws { TypeError } if this is not a ListNode instance
+     * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
-     * @throws { TypeError } if index is not an integer
-     * @throws { RangeError } if index is less than 0 or greater than the length of list
+     * @throws { TypeError } if index is not a number
+     * @throws { RangeError } if index is not an integer less than 0 or greater than the length of list
      * @throws { RangeError } if the node's list length >= 2 ** 32 - 1
      */
     insertInto (list: List<T>, index: number) {
@@ -334,8 +336,10 @@ export class ListNode<T> {
         else if (targetListData.length >= maxLength)
             throw new RangeError('list.length() >= 2 ** 32 - 1')
 
-        if (!Number.isInteger(index))
-            throw new TypeError('argument index is not an integer')
+        if (typeof index !== 'number')
+            throw new TypeError('argument index is not a number')
+        else if (!Number.isInteger(index))
+            throw new RangeError('argument index is not an integer')
         else if (index < 0 || index > targetListData.length)
             throw new RangeError('argument index is not valid')
 
@@ -367,7 +371,7 @@ export class ListNode<T> {
             targetListData.first = targetListData.last = currentNodeData
             targetListData.length = 1
 
-            return
+            return this
         }
         // unshift; list length >= 1
         else if (index === 0) {
@@ -433,11 +437,13 @@ export class ListNode<T> {
         }
 
         targetListData.length++
+
+        return this
     }
 
     /**
      * Remove this node from its current list.
-     * @throws { TypeError } if this instanceof ListNode === false
+     * @throws { TypeError } if this is not a ListNode instance
      */
     remove() {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
@@ -454,9 +460,11 @@ export class ListNode<T> {
                 currentNodeData.next.previous = currentNodeData.previous
             else
                 currentListData.last = currentNodeData.previous
-    
+
+            currentNodeData.previous = null
+            currentNodeData.next = null
+
             currentListData.length--
-    
             currentNodeData.listData = null
         }
 
@@ -487,14 +495,13 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Create a List instance with the specified length where all node values are undefined.
      * @throws {TypeError} if called without the new operator
-     * @throws {TypeError} if this.constructor.ListNode is not valid
+     * @throws {RangeError} if length is not an integer or is less than 0 or greater than or equal to 2 ** 32 - 1
      */
     constructor (length: number)
 
     /**
      * Create a List instance and insert the given values.
      * @throws { TypeError } if called without the new operator
-     * @throws { TypeError } if this.constructor.ListNode is not valid
      */
     constructor (...values: T[])
 
@@ -514,10 +521,13 @@ export class List<T> implements Iterable<ListNode<T>> {
         const length = values[0] as number
 
         // fill with undefined
-        if (values.length === 1 && Number.isInteger(length) && length > -1 && length < maxLength + 1)
+        if (values.length === 1 && typeof length === 'number') {
+            if (!Number.isInteger(length) || length < 0 || length > maxLength) throw new RangeError('length')
+
             for (let i = 0 as number; i < length; i++) {
                 new ListNode(undefined, this, 0)
             }
+        }
         // fill with values
         else for (const value of values) {
             new ListNode(value, this, this.#data.length)
@@ -557,13 +567,14 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Return the node at the given index.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if index is not an integer
-     * @throws { RangeError } if index is less than 0 or greater than or equal to this length
+     * @throws { TypeError } if index is not a number
+     * @throws { RangeError } if index is not an integer or is less than 0 or greater than or equal to this length
      */
     at = (index: number) => {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
 
-        if (!Number.isInteger(index)) throw new TypeError('index')
+        if (typeof index !== 'number') throw new TypeError('index')
+        else if (!Number.isInteger(index)) throw new RangeError('index')
         
         const listData = this.#data
 
@@ -571,11 +582,8 @@ export class List<T> implements Iterable<ListNode<T>> {
 
         let nodeData: ListNodeData<T> | null
 
-        // empty
-        if (listData.length === 0)
-            return null
         // first; length >= 1
-        else if (index === 0)
+        if (index === 0)
             nodeData = listData.first
         // last; length >= 2
         else if (index === listData.length - 1)
@@ -647,8 +655,8 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Insert the given values into this list at the given index and return this length.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if index is not an integer
-     * @throws { RangeError } if index is less than 0 or greater than this length
+     * @throws { TypeError } if index is not a number
+     * @throws { RangeError } if index is not an integer or less than 0 or greater than this length
      */
     insert (index: number, ...values: T[]) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }

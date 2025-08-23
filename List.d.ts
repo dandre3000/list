@@ -11,7 +11,7 @@ export declare class ListNode<T> {
     /**
      * Create a ListNode instance and insert it into a list at the given index.
      * @throws { TypeError } if called without the new operator
-     * @throws { TypeError } if list instanceof List === false
+     * @throws { TypeError } if list is not a List instance
      * @throws { RangeError } if the length of list >= 2 ** 32 - 1
      * @throws { TypeError } if index is not an integer
      * @throws { RangeError } if index is less than 0 or greater than the length of list
@@ -19,41 +19,41 @@ export declare class ListNode<T> {
     constructor(value: T, list: List<T>, index: number);
     /**
      * Return the list containing this node or null if this is not in a list.
-     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if this is not a ListNode instance
      */
     list(): List<T> | null;
     /**
      * Return the previous node in the list containing this node.
      * Return null if this is the first node in the list or if this is not in a list.
-     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if this is not a ListNode instance
      */
     previous(): ListNode<T> | null;
     /**
      * Return the next node in the list containing this node.
      * Return null if this is the last node in the list or if this is not in a list.
-     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if this is not a ListNode instance
      */
     next(): ListNode<T> | null;
     /**
      * Remove this node from its containing list and prepend it to another node.
-     * @throws { TypeError } if this instanceof ListNode === false
-     * @throws { TypeError } if node instanceof ListNode === false
+     * @throws { TypeError } if this is not a ListNode instance
+     * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
      * @throws { RangeError } if the node's list length >= 2 ** 32 - 1
      */
     prependTo(node: ListNode<T>): this;
     /**
      * Remove this node from its containing list and append it to another node.
-     * @throws { TypeError } if this instanceof ListNode === false
-     * @throws { TypeError } if node instanceof ListNode === false
+     * @throws { TypeError } if this is not a ListNode instance
+     * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
      * @throws { RangeError } if the node's list length >= 2 ** 32 - 1
      */
     appendTo(node: ListNode<T>): this;
     /**
      * Remove this node from its containing list and insert it into another list at the given index.
-     * @throws { TypeError } if this instanceof ListNode === false
-     * @throws { TypeError } if node instanceof ListNode === false
+     * @throws { TypeError } if this is not a ListNode instance
+     * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
      * @throws { TypeError } if index is not an integer
      * @throws { RangeError } if index is less than 0 or greater than the length of list
@@ -62,7 +62,7 @@ export declare class ListNode<T> {
     insertInto(list: List<T>, index: number): void;
     /**
      * Remove this node from its current list.
-     * @throws { TypeError } if this instanceof ListNode === false
+     * @throws { TypeError } if this is not a ListNode instance
      */
     remove(): this;
 }
@@ -73,13 +73,12 @@ export declare class List<T> implements Iterable<ListNode<T>> {
     /**
      * Create a List instance with the specified length where all node values are undefined.
      * @throws {TypeError} if called without the new operator
-     * @throws {TypeError} if this.constructor.ListNode is not valid
+     * @throws {RangeError} if length is not an integer or is less than 0 or greater than or equal to 2 ** 32 - 1
      */
     constructor(length: number);
     /**
      * Create a List instance and insert the given values.
      * @throws { TypeError } if called without the new operator
-     * @throws { TypeError } if this.constructor.ListNode is not valid
      */
     constructor(...values: T[]);
     /**
@@ -100,8 +99,8 @@ export declare class List<T> implements Iterable<ListNode<T>> {
     /**
      * Return the node at the given index.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if index is not an integer
-     * @throws { RangeError } if index is less than 0 or greater than or equal to this length
+     * @throws { TypeError } if index is not a number
+     * @throws { RangeError } if index is not an integer or is less than 0 or greater than or equal to this length
      */
     at: (index: number) => ListNode<T>;
     /**
