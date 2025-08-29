@@ -65,7 +65,7 @@ lastNode.previous();
   - Removes this node from its list and prepends it to another node
 - `appendTo(node: ListNode<T>): this`
   - Removes this node and appends it to another node
-- `insertInto(list: List<T>, index: number): void`
+- `insertInto(list: List<T>, index: number): this`
   - Removes this node and inserts it into another list at the specified index
 - `remove(): this`
   - Removes this node from its containing list
@@ -86,8 +86,8 @@ lastNode.previous();
   - Returns the last node or `null` if empty
 - `length(): number`
   - Returns the length of the list
-- `at(index: number): ListNode<T>`
-  - Returns the node at the given index
+- `at(index: number): ListNode<T> | null`
+  - Returns the node at the given index or `null` if index is out of bounds
 - `unshift(...values: T[]): number`
   - Adds values to the front and returns new length
 - `push(...values: T[]): number`
@@ -110,7 +110,7 @@ lastNode.previous();
   - Sets all node values to the given value
 - `reverse(): this`
   - Reverses the list order
-- `copyWithin(start: number, end: number, index: number, targetEnd?: boolean): this`
+- `copyWithin(start: number, end: number, target: number, targetEnd?: boolean): this`
   - Copies values within list ranges
 - `slice(start?: number, end?: number): List<T>`
   - Returns a copy of a portion of the list
@@ -130,12 +130,8 @@ lastNode.previous();
   - Reduces nodes using callback
 - `filter(callback, self?, backwards?): this`
   - Removes nodes where callback returns `true`
-- `toFilter(callback, self?, backwards?): List<T>`
-  - Returns new `List` of node values where callback returns `true`
 - `map(callback, self?, backwards?): List<U>`
   - Maps nodes to new values in place
-- `toMapped(callback, self?, backwards?): List<U>`
-  - Returns new `List` of mapped values
 - `forEach(callback, self?, backwards?): this`
   - Calls callback for each node
 - `concat(...values: (T | Iterable<T>)[]): List<T>`
