@@ -220,8 +220,14 @@ test('ListNode.prototype.remove', () => {
 })
 
 test('List.prototype[Symbol.iterator]', () => {
+    let list = new List
+
+    for (const node of list) {
+        throw new Error
+    }
+
     const values = new Array(2 + Math.round(Math.random() * 3)).fill(0).map(() => Math.random())
-    const list = new List(...values)
+    list = new List(...values)
     let i = 0
 
     for (const node of list) {
@@ -261,22 +267,31 @@ test('List.prototype.map', () => {
     const list = new List(2 + Math.round(Math.random() * 3))
 
     expect(returnThrow(() => list.map({}))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.map(() => Math.random(), null, 'true'))).toBeInstanceOf(TypeError)
 
-    const values = []
+    const self = {}
     let count = 0
-    let callback = (node, i, currentList) => {
-        expect(node.value).toBe(currentList.at(i).value)
+    let callback = function (node, i, currentList) {
+        expect(node).toBe(currentList.at(i))
         expect(currentList).toBe(list)
         expect(i).toBe(count)
+        expect(this).toBe(self)
+        count++
+        return Math.random()
+    }
 
+    expect(list.map(callback, self)).toBe(list)
+    expect(count).toBe(list.length())
+
+    const values = []
+    count = 0
+    callback = node => {
         const result = node.value *= 2
         values.push(result)
         count++
-
         return result
     }
 
-    expect(returnThrow(() => list.map(() => Math.random(), undefined, 'true')))
     expect(list.map(callback)).toBe(list)
     expect(count).toBe(list.length())
 
@@ -285,15 +300,6 @@ test('List.prototype.map', () => {
         expect(value).toBe(values[i])
         i++
     }
-
-    // self
-    const self = {}
-    callback = function({ value }) {
-        expect(this).toBe(self)
-        return value
-    }
-    
-    list.map(callback, self)
 
     // backwards
     values.reverse()
@@ -304,7 +310,7 @@ test('List.prototype.map', () => {
         j++
     }
 
-    list.map(callback, undefined, true)
+    list.map(callback, null, true)
 })
 
 test('List.prototype.slice', () => {
@@ -388,8 +394,12 @@ test('List.prototype.reverse', () => {
 
 test('List.prototype.unshift', () => {
     const list = new List(Math.round(Math.random() * 5)).map(() => Math.random())
+
+    let values = new Array(2 ** 32 - 1)
+    expect(returnThrow(() => list.unshift(...values))).toBeInstanceOf(RangeError)
+
     const listLength = list.length()
-    const values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
+    values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
     
     expect(list.unshift(...values)).toBe(listLength + values.length)
     expect(list.first().value).toBe(values[0])
@@ -403,8 +413,12 @@ test('List.prototype.unshift', () => {
 
 test('List.prototype.push', () => {
     const list = new List(Math.round(Math.random() * 5)).map(() => Math.random())
+
+    let values = new Array(2 ** 32 - 1)
+    expect(returnThrow(() => list.push(...values))).toBeInstanceOf(RangeError)
+
     const listLength = list.length()
-    const values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
+    values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
     
     expect(list.push(...values)).toBe(listLength + values.length)
     expect(list.last().value).toBe(values[values.length - 1])
@@ -418,14 +432,17 @@ test('List.prototype.push', () => {
 
 test('List.prototype.insert', () => {
     const list = new List(Math.round(Math.random() * 5)).map(() => Math.random())
-    const listLength = list.length()
-    const values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
     const index = Math.round(Math.random() * list.length())
 
+    let values = new Array(2 ** 32 - 1)
+    expect(returnThrow(() => list.insert(index, ...values))).toBeInstanceOf(RangeError)
+
+    values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
     expect(returnThrow(() => list.insert('0', ...values))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.insert(0.1, ...values))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.insert(-1, ...values))).toBeInstanceOf(RangeError)
 
+    const listLength = list.length()
     expect(list.insert(index, ...values)).toBe(listLength + values.length)
 
     for (let i = 0; i < values.length; i++) {
@@ -474,18 +491,24 @@ test('List.prototype.pop', () => {
 })
 
 test('List.prototype.remove', () => {
-    expect(new List().pop()).toBe(null)
-
     const list = new List(Math.round(2 + Math.random() * 3)).map(() => Math.random())
-    const node = list.last()
-    const previous = list.at(list.length() - 2)
 
-    expect(list.pop()).toBe(node)
+    expect(returnThrow(() => list.remove('0'))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.remove(-1))).toBeInstanceOf(RangeError)
+    expect(returnThrow(() => list.remove(list.length()))).toBeInstanceOf(RangeError)
+    expect(returnThrow(() => list.remove(0.1))).toBeInstanceOf(RangeError)
+
+    const index = Math.floor(Math.random() * list.length())
+    const node = list.at(index)
+    const previous = list.at(index - 1)
+    const next = list.at(index + 1)
+
+    expect(list.remove(index)).toBe(node)
     expect(node.list()).toBe(null)
     expect(node.previous()).toBe(null)
     expect(node.next()).toBe(null)
-    expect(list.last()).toBe(previous)
-    if (previous) expect(previous.next()).toBe(null)
+    if (previous) expect(previous.next()).toBe(next)
+    if (next) expect(next.previous()).toBe(previous)
 })
 
 test('List.prototype.clear', () => {
@@ -507,6 +530,10 @@ test('List.prototype.clear', () => {
 test('List.prototype.splice', () => {
     // list argument undefined
     let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    let newList = new List(2 ** 24 - 1)
+    expect(returnThrow(() => list.splice(0, 0, newList, 0))).toBeInstanceOf(RangeError)
+
     let listLength = list.length()
     let start = Math.floor(Math.random() * listLength)
     let end = Math.floor(Math.random() * listLength)
@@ -537,7 +564,7 @@ test('List.prototype.splice', () => {
             unsplicedNodes.push(list.at(i))
     }
 
-    let newList = list.splice(start, end)
+    newList = list.splice(start, end)
     let newListLength = newList.length()
 
     expect(newList).toBeInstanceOf(List)
@@ -780,7 +807,7 @@ test('List.prototype.copyWithin', () => {
     // targetEnd = false
     let copy = list.slice(0, listLength - 1)
     expect(list.copyWithin(start, end, index)).toBe(list)
-
+    console.log('copyWithin', start, end, index, copy.toString(), list.toString())
     let i = 0
     let j = 0
     for (const { value } of list) {
@@ -811,5 +838,314 @@ test('List.prototype.copyWithin', () => {
         } else
             expect(value).toBe(copy.at(i).value)
         i++
+    }
+})
+
+test('List.prototype.includes', () => {
+    const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.includes(-1, 'true'))).toBeInstanceOf(TypeError)
+    expect(list.includes(-1)).toBeFalse()
+
+    const value = Math.random()
+    list.insert(Math.floor(Math.random() * list.length()), value)
+    expect(list.includes(value)).toBeTrue()
+    expect(list.includes(value, true)).toBeTrue()
+})
+
+test('List.prototype.indexOf', () => {
+    const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.indexOf(-1, 'true'))).toBeInstanceOf(TypeError)
+    expect(list.indexOf(-1)).toBe(-1)
+
+    // forwards
+    const value = Math.random() * -1
+    let index = 0
+    list.insert(index, value)
+    expect(list.indexOf(value)).toBe(index)
+
+    // backwards
+    index = list.length() - 1
+    list.insert(index, value)
+    expect(list.indexOf(value, true)).toBe(index)
+})
+
+test('List.prototype.find', () => {
+    const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.find({}))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.find(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
+
+    // forwards
+    let value = Math.random() * -1
+    let index = Math.floor(Math.random() * list.length())
+    list.insert(index, value)
+
+    const self = {}
+    let count = 0
+    let callback = function (node, i, currentList) {
+        expect(node).toBe(currentList.at(i))
+        expect(currentList).toBe(list)
+        expect(this).toBe(self)
+        count++
+    }
+
+    expect(list.find(callback, self)).toBe(null)
+    expect(count).toBe(list.length())
+
+    count = 0
+    callback = node => {
+        count++
+        return node.value === value
+    }
+
+    expect(list.find(callback)).toBe(list.at(index))
+    expect(count).toBe(index + 1)
+
+    // backwards
+    value = Math.random() * -1
+    index++
+    list.insert(index, value)
+    count = 0
+    callback = (node) => {
+        count++
+        return node.value === value
+    }
+    expect(list.find(callback, null, true)).toBe(list.at(index))
+    expect(count).toBe(list.length() - index)
+})
+
+test('List.prototype.findIndex', () => {
+    const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.findIndex({}))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.findIndex(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
+
+    // forwards
+    let value = Math.random() * -1
+    let index = Math.floor(Math.random() * list.length())
+    list.insert(index, value)
+
+    const self = {}
+    let count = 0
+    let callback = function (node, i, currentList) {
+        expect(node).toBe(currentList.at(i))
+        expect(currentList).toBe(list)
+        expect(this).toBe(self)
+        count++
+    }
+
+    expect(list.findIndex(callback, self)).toBe(-1)
+    expect(count).toBe(list.length())
+
+    count = 0
+    callback = node => {
+        count++
+        return node.value === value
+    }
+
+    expect(list.findIndex(callback)).toBe(index)
+    expect(count).toBe(index + 1)
+
+    // backwards
+    value = Math.random() * -1
+    index++
+    list.insert(index, value)
+    count = 0
+    callback = (node) => {
+        count++
+        return node.value === value
+    }
+    expect(list.findIndex(callback, null, true)).toBe(index)
+    expect(count).toBe(list.length() - index)
+})
+
+test('List.prototype.some', () => {
+    const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.some({}))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.some(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
+
+    // forwards
+    let value = Math.random() * -1
+    let index = Math.floor(Math.random() * list.length())
+    list.insert(index, value)
+
+    const self = {}
+    let count = 0
+    let callback = function (node, i, currentList) {
+        expect(node).toBe(currentList.at(i))
+        expect(currentList).toBe(list)
+        expect(this).toBe(self)
+        count++
+    }
+
+    expect(list.some(callback, self)).toBeFalse()
+    expect(count).toBe(list.length())
+
+    count = 0
+    callback = node => {
+        count++
+        return node.value === value
+    }
+
+    expect(list.some(callback)).toBeTrue()
+    expect(count).toBe(index + 1)
+
+    // backwards
+    value = Math.random() * -1
+    index++
+    list.insert(index, value)
+    count = 0
+    callback = (node) => {
+        count++
+        return node.value === value
+    }
+    expect(list.some(callback, null, true)).toBeTrue()
+    expect(count).toBe(list.length() - index)
+})
+
+test('List.prototype.every', () => {
+    const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.every({}))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.every(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
+
+    // forwards
+    let value = Math.random()
+    let index = Math.floor(Math.random() * list.length())
+    list.insert(index, value)
+
+    const self = {}
+    let count = 0
+    let callback = function (node, i, currentList) {
+        expect(node).toBe(currentList.at(i))
+        expect(currentList).toBe(list)
+        expect(this).toBe(self)
+        count++
+        return true
+    }
+
+    expect(list.every(callback, self)).toBeTrue()
+    expect(count).toBe(list.length())
+
+    count = 0
+    callback = node => {
+        count++
+        return node.value !== value
+    }
+
+    expect(list.every(callback)).toBeFalse()
+    expect(count).toBe(index + 1)
+
+    // backwards
+    value = Math.random()
+    index++
+    list.insert(index, value)
+    count = 0
+    callback = (node) => {
+        count++
+        return node.value !== value
+    }
+    expect(list.every(callback, null, true)).toBeFalse()
+    expect(count).toBe(list.length() - index)
+})
+
+test('List.prototype.reduce', () => {
+    const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.reduce({}))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.reduce(() => {}, 0, null, 'true'))).toBeInstanceOf(TypeError)
+
+    // forwards
+    let value
+    const self = {}
+    let count = 0
+    let callback = function (accumulator, node, i, currentList) {
+        expect(node).toBe(currentList.at(i))
+        expect(currentList).toBe(list)
+        expect(this).toBe(self)
+        count++
+        return value = accumulator + node.value
+    }
+
+    expect(list.reduce(callback, value, self)).toBe(value)
+    expect(count).toBe(list.length())
+
+    // backwards
+    count = list.length() - 1
+    callback = (accumulator, node) => {
+        expect(node).toBe(list.at(count))
+        count--
+    }
+
+    list.reduce(callback, 0, null, true)
+})
+
+test('List.prototype.filter', () => {
+    let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.filter({}))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.filter(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
+
+    // forwards
+    const self = {}
+    let count = 0
+    const filteredNodes = []
+    const listLength = list.length()
+    let callback = function (node, i, currentList) {
+        expect(node).toBe(currentList.at(i))
+        expect(currentList).toBe(list)
+        expect(this).toBe(self)
+        count++
+        if (node.value > 0.5) {
+            filteredNodes.push(node)
+            return true
+        }
+    }
+
+    expect(list.filter(callback, self)).toBe(list)
+    expect(count).toBe(listLength)
+    expect(list.length()).toBe(listLength - filteredNodes.length)
+
+    // backwards
+    list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+    count = list.length() - 1
+    callback = (node) => {
+        expect(node).toBe(list.at(count))
+        count--
+        return true
+    }
+
+    expect(list.filter(callback, null, true).length()).toBe(0)
+})
+
+test('List.prototype.forEach', () => {
+    let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.forEach({}))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.forEach(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
+
+    // forwards
+    const self = {}
+    let count = 0
+    const listLength = list.length()
+    let callback = function (node, i, currentList) {
+        expect(node).toBe(currentList.at(i))
+        expect(currentList).toBe(list)
+        expect(this).toBe(self)
+        count++
+    }
+
+    expect(list.filter(callback, self)).toBe(list)
+    expect(count).toBe(listLength)
+
+    // backwards
+    count = list.length() - 1
+    callback = (node) => {
+        expect(node).toBe(list.at(count))
+        count--
+        return true
     }
 })

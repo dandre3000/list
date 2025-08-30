@@ -12,7 +12,7 @@ export declare class ListNode<T> {
      * Create a ListNode instance and insert it into a list at the given index.
      * @throws { TypeError } if called without the new operator
      * @throws { TypeError } if list is not a List instance
-     * @throws { RangeError } if the length of list >= 2 ** 32 - 1
+     * @throws { RangeError } if the length of list >= 2 ** 24 - 1
      * @throws { TypeError } if index is not a number
      * @throws { RangeError } if index is not an integer greater than -1 or less than the length of list + 1
      */
@@ -39,7 +39,7 @@ export declare class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
-     * @throws { RangeError } if the node's list length >= 2 ** 32 - 1
+     * @throws { RangeError } if the node's list length >= 2 ** 24 - 1
      */
     prependTo(node: ListNode<T>): this;
     /**
@@ -47,14 +47,14 @@ export declare class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
-     * @throws { RangeError } if the node's list length >= 2 ** 32 - 1
+     * @throws { RangeError } if the node's list length >= 2 ** 24 - 1
      */
     appendTo(node: ListNode<T>): this;
     /**
      * Remove this node from its containing list and insert it into another list at the given index.
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if list is not a List instance
-     * @throws { RangeError } if list length >= 2 ** 32 - 1
+     * @throws { RangeError } if list length >= 2 ** 24 - 1
      * @throws { TypeError } if index is not a number
      * @throws { RangeError } if index is not an integer greater than -1 or less than the length of list + 1
      */
@@ -68,6 +68,8 @@ export declare class ListNode<T> {
 /** Doubly linked list */
 export declare class List<T> implements Iterable<ListNode<T>> {
     #private;
+    /** The maximum length of all lists. */
+    static readonly maxLength: number;
     static [Symbol.hasInstance](instance: any): boolean;
     /**
      * Create a List instance with the specified length where all node values are undefined.
@@ -105,11 +107,13 @@ export declare class List<T> implements Iterable<ListNode<T>> {
     /**
      * Add the given values to the front of this list and return this length.
      * @throws { TypeError } if this is not a List instance
+     * @throws { RangeError } if list length would be greater than 2 ** 24 - 1
      */
     unshift(...values: T[]): number;
     /**
      * Add the given values to the end of this list and return this length.
      * @throws { TypeError } if this is not a List instance
+     * @throws { RangeError } if list length would be greater than 2 ** 24 - 1
      */
     push(...values: T[]): number;
     /**
@@ -117,6 +121,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if index is not a number
      * @throws { RangeError } if index is not an integer greater than -1 or less than this length + 1
+     * @throws { RangeError } if list length would be greater than 2 ** 24 - 1
      */
     insert(index: number, ...values: T[]): number;
     /**
@@ -158,7 +163,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if start or end is not a number
      * @throws { RangeError } if start or end is not an integer greater than -1 or less than this length
      * @throws { TypeError } if list is not a List instance
-     * @throws { RangeError } if list is not this and list length + the amount of nodes to be inserted is greater than 2 ** 32 - 1
+     * @throws { RangeError } if list length would be greater than 2 ** 24 - 1
      * @throws { TypeError } if index is not a number
      * @throws { RangeError } if index is not a integer greater than -1 or less than list length (minus number of nodes to be moved if list === this) + 1
      */
@@ -287,8 +292,9 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * Return a new List that is populated by the contents of this list along with the given values.
      * or their contents if the value is an Iterable.
      * @throws { TypeError } if this is not a List instance
+     * @throws { RangeError } if the new list length would be greater than 2 ** 24 - 1
      */
-    concat(...values: (T | Iterable<T>)[]): List<T>;
+    concat(...values: (T | ArrayLike<T> | Set<T> | Map<any, T>)[]): List<T>;
     /**
      * Return an array containing each node in this list.
      * @throws { TypeError } if this is not a List instance
