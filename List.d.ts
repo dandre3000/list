@@ -103,7 +103,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if index is not a number
      * @throws { RangeError } if index is not an integer
      */
-    at: (index: number) => ListNode<T> | null;
+    at(index: number): ListNode<T> | null;
     /**
      * Add the given values to the front of this list and return this length.
      * @throws { TypeError } if this is not a List instance
@@ -193,6 +193,11 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      */
     copyWithin(start: number, end: number, target: number, targetEnd?: boolean): this;
     /**
+     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
+     */
+    sort(callback: (a: T, b: T) => number): this;
+    /**
      * Return a copy of a portion of this list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
      * Therefore start or end can be the higher index, (List instance).slice(start, end) and (List instance).slice(end, start) are the same operation.
@@ -200,7 +205,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param end default this.length() - 1
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start or end is not a number
-     * @throws { RangeError } if index is not a integer greater than -1 or less than list length
+     * @throws { RangeError } if start or end is not a integer greater than -1 or less than list length
      */
     slice(start?: number, end?: number): List<T>;
     /**
@@ -223,6 +228,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     find(callback: (node: ListNode<T>, index: number, list: List<T>) => void, self?: any, backwards?: boolean): ListNode<T>;
@@ -232,6 +238,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     findIndex(callback: (node: ListNode<T>, index: number, list: List<T>) => void, self?: any, backwards?: boolean): number;
@@ -241,6 +248,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     some(callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self?: any, backwards?: boolean): boolean;
@@ -250,6 +258,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     every(callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self?: any, backwards?: boolean): boolean;
@@ -261,6 +270,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     reduce<U>(callback: (accumulator: U, node: ListNode<T>, index: number, list: List<T>) => U, initialValue: U, self?: any, backwards?: boolean): U;
@@ -269,6 +279,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     filter(callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self?: any, backwards?: boolean): this;
@@ -277,6 +288,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     map<U>(callback: (node: ListNode<T>, index: number, list: List<T>) => U, self?: any, backwards?: boolean): List<U>;
@@ -285,16 +297,17 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     forEach(callback: (node: ListNode<T>, index: number, list: List<T>) => void, self?: any, backwards?: boolean): this;
     /**
      * Return a new List that is populated by the contents of this list along with the given values.
-     * or their contents if the value is an Iterable.
+     * or their contents if the value is a List.
      * @throws { TypeError } if this is not a List instance
      * @throws { RangeError } if the new list length would be greater than 2 ** 24 - 1
      */
-    concat(...values: (T | ArrayLike<T> | Set<T> | Map<any, T>)[]): List<T>;
+    concat(...values: (T | List<T>)[]): List<T>;
     /**
      * Return an array containing each node in this list.
      * @throws { TypeError } if this is not a List instance

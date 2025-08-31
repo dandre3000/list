@@ -5,12 +5,8 @@ const returnThrow = (fn, ...args) => {
     try { fn(...args) } catch (error) { return error }
 }
 
-test(`"object instanceof List" using objects with the List prototype that were not created using new List will be false`, () => {
+test(`List[Symbol.hasInstance]`, () => {
     expect(Object.create(List) instanceof List).toBeFalse()
-})
-
-test(`"object instanceof ListNode" using objects with the ListNode prototype that were not created using new ListNode will be false`, () => {
-    expect(Object.create(ListNode) instanceof ListNode).toBeFalse()
 })
 
 test(`List.prototype.constructor`, () => {
@@ -36,6 +32,10 @@ test(`List.prototype.constructor`, () => {
 
     expect(new List()).toBeInstanceOf(List)
     expect(new List(undefined, null, NaN, '', Symbol(), true, {}, () => {})).toBeInstanceOf(List)
+})
+
+test(`ListNode[Symbol.hasInstance]`, () => {
+    expect(Object.create(ListNode) instanceof ListNode).toBeFalse()
 })
 
 test(`ListNode.prototype.constructor`, () => {
@@ -236,6 +236,20 @@ test('List.prototype[Symbol.iterator]', () => {
     }
 
     expect(i).toBe(list.length())
+})
+
+test('List.prototype.nodes', () => {
+    const list = new List(2 + Math.round(Math.random() * 3))
+
+    const nodes = list.nodes()
+    expect(nodes).toBeInstanceOf(Array)
+    expect(nodes.length).toBe(list.length())
+
+    let i = 0
+    for (const node of list) {
+        expect(node).toBe(nodes[i])
+        i++
+    }
 })
 
 test('List.prototype.values', () => {
@@ -1147,5 +1161,30 @@ test('List.prototype.forEach', () => {
         expect(node).toBe(list.at(count))
         count--
         return true
+    }
+})
+
+test('List.prototype.concat', () => {
+    let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.concat(new List(2 ** 24)))).toBeInstanceOf(RangeError)
+    expect(returnThrow(() => list.concat(...new Array(2 ** 24)))).toBeInstanceOf(RangeError)
+
+    const concatValues = new Array(2 + Math.round(Math.random() * 3)).fill(0).map(() => Math.random())
+    const concatList = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+    const flatValues = [...list.values(), ...concatValues]
+    const index = Math.floor(Math.random() * concatValues.length)
+    concatValues.splice(index, 0, concatList)
+    flatValues.splice(index + list.length(), 0, ...concatList.values())
+
+    const newList = list.concat(...concatValues)
+    expect(newList).toBeInstanceOf(List)
+    expect(newList).not.toBe(list)
+    expect(newList.length()).toBe(flatValues.length)
+
+    let i = 0
+    for (const node of newList) {
+        expect(node.value).toBe(flatValues[i])
+        i++
     }
 })

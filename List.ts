@@ -567,7 +567,7 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if index is not a number
      * @throws { RangeError } if index is not an integer
      */
-    at = (index: number): ListNode<T> | null => {
+    at (index: number): ListNode<T> | null {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
 
         if (typeof index !== 'number') throw new TypeError('index')
@@ -1271,6 +1271,39 @@ export class List<T> implements Iterable<ListNode<T>> {
     }
 
     /**
+     * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
+     */
+    sort (callback: (a: T, b: T) => number) {
+        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
+
+        const values = []
+        let nodeData: ListNodeData<T> | null = this.#data.first
+        let i = 0
+
+        while (nodeData) {
+            values[i] = nodeData.node.value
+            nodeData = nodeData.next
+            i++
+        }
+
+        values.sort(callback)
+
+        nodeData = this.#data.first
+        i = 0
+
+        while (nodeData) {
+            nodeData.node.value = values[i]
+            nodeData = nodeData.next
+            i++
+        }
+
+        return this
+    }
+
+    /**
      * Return a copy of a portion of this list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
      * Therefore start or end can be the higher index, (List instance).slice(start, end) and (List instance).slice(end, start) are the same operation.
@@ -1278,7 +1311,7 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param end default this.length() - 1
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start or end is not a number
-     * @throws { RangeError } if index is not a integer greater than -1 or less than list length
+     * @throws { RangeError } if start or end is not a integer greater than -1 or less than list length
      */
     slice (start = 0, end = this.#data.length - 1) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
@@ -1429,10 +1462,13 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     find (callback: (node: ListNode<T>, index: number, list: List<T>) => void, self = null, backwards = false) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
 
         if (typeof backwards !== 'boolean') throw new TypeError('backwards')
 
@@ -1473,10 +1509,13 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     findIndex (callback: (node: ListNode<T>, index: number, list: List<T>) => void, self = null, backwards = false) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
 
         if (typeof backwards !== 'boolean') throw new TypeError('backwards')
 
@@ -1518,10 +1557,13 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     some (callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self = null, backwards = false) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
 
         if (typeof backwards !== 'boolean') throw new TypeError('backwards')
 
@@ -1563,10 +1605,13 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     every (callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self = null, backwards = false) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
 
         if (typeof backwards !== 'boolean') throw new TypeError('backwards')
 
@@ -1609,10 +1654,13 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     reduce<U> (callback: (accumulator: U, node: ListNode<T>, index: number, list: List<T>) => U, initialValue: U, self = null, backwards = false) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
 
         if (typeof backwards !== 'boolean') throw new TypeError('backwards')
 
@@ -1654,10 +1702,13 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     filter (callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self = null, backwards = false) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
 
         if (typeof backwards !== 'boolean') throw new TypeError('backwards')
 
@@ -1718,10 +1769,14 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     map <U>(callback: (node: ListNode<T>, index: number, list: List<T>) => U, self = null, backwards = false) {
+                if (typeof callback !== 'function') throw new TypeError('callback')
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
 
         if (typeof backwards !== 'boolean') throw new TypeError('backwards')
 
@@ -1772,10 +1827,13 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @param self used as this when executing the callback
      * @param backwards iterate from first to last if false (default) or from last to first if true
      * @throws { TypeError } if this is not a List instance
+     * @throws { TypeError } if callback is not a function
      * @throws { TypeError } if backwards is not a boolean
      */
     forEach (callback: (node: ListNode<T>, index: number, list: List<T>) => void, self = null, backwards = false) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+
+        if (typeof callback !== 'function') throw new TypeError('callback')
 
         if (typeof backwards !== 'boolean') throw new TypeError('backwards')
 
@@ -1812,11 +1870,11 @@ export class List<T> implements Iterable<ListNode<T>> {
 
     /**
      * Return a new List that is populated by the contents of this list along with the given values.
-     * or their contents if the value is an Iterable.
+     * or their contents if the value is a List.
      * @throws { TypeError } if this is not a List instance
      * @throws { RangeError } if the new list length would be greater than 2 ** 24 - 1
      */
-    concat (...values: (T | ArrayLike<T> | Set<T> | Map<any, T>)[]) {
+    concat (...values: (T | List<T>)[]) {
         try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
         
         let length = this.#data.length
@@ -1824,10 +1882,8 @@ export class List<T> implements Iterable<ListNode<T>> {
         if (length + values.length > List.maxLength) throw new RangeError('length')
 
         for (const value of values) {
-            if (typeof value === 'object' && typeof (value as any).length === 'number') {
-                length += (value as any).length
-            } else if (value instanceof Set || value instanceof Map) {
-                length += value.size
+            if (value instanceof List) {
+                length += value.#data.length
             } else
                 length++
 
@@ -1836,15 +1892,26 @@ export class List<T> implements Iterable<ListNode<T>> {
 
         const newList = new List<T>
 
+        let nodeData = this.#data.first
+
+        while (nodeData) {
+            new ListNode(nodeData.node.value, newList, newList.#data.length)
+
+            nodeData = nodeData.next
+        }
+
         for (const value of values) {
-            if (typeof value === 'object' && typeof (value as any).length === 'number') for (let i = 0; i < (value as any).length; i++) {
-                new ListNode(value[i], this, this.#data.length)
-            } else if (value instanceof Set) for (const element of value) {
-                new ListNode(element, this, this.#data.length)
-            } else if (value instanceof Map) for (const [key, element] of value) {
-                new ListNode(element, this, this.#data.length)
+            if (value instanceof List) {
+                nodeData = value.#data.first
+                
+
+                while (nodeData) {
+                    new ListNode(nodeData.node.value, newList, newList.#data.length)
+
+                    nodeData = nodeData.next
+                }
             } else
-                new ListNode(value, this, this.#data.length)
+                new ListNode(value, newList, newList.#data.length)
         }
 
         return newList

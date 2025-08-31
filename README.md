@@ -112,6 +112,8 @@ lastNode.previous();
   - Reverses the list order
 - `copyWithin(start: number, end: number, target: number, targetEnd?: boolean): this`
   - Copies values within list ranges
+- `sort(callback): this`
+  - Sorts values in the list
 - `slice(start?: number, end?: number): List<T>`
   - Returns a copy of a portion of the list
 - `includes(value: T, backwards?: boolean): boolean`
@@ -134,7 +136,7 @@ lastNode.previous();
   - Maps nodes to new values in place
 - `forEach(callback, self?, backwards?): this`
   - Calls callback for each node
-- `concat(...values: (T | Iterable<T>)[]): List<T>`
+- `concat(...values: (T | List<T>)[]): List<T>`
   - Returns a new `List` with the given values appended
 - `nodes(): ListNode<T>[]`
   - Returns `Array` of all nodes
