@@ -7,7 +7,18 @@
         "email": "apps.fondling796@passinbox.com",
         "url": "https://github.com/dandre3000/list"
     },
-    "keywords": [],
+    "keywords": [
+        "list",
+        "linked-list", 
+        "doubly-linked-list",
+        "data-structure",
+        "typescript",
+        "array",
+        "node",
+        "collection",
+        "iterable",
+        "datastructure"
+    ],
     "files": ["./List.js", "./List.d.ts"],
     "main": "./List.js",
     "types": "./List.d.ts",
