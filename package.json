@@ -7,11 +7,13 @@
         "email": "apps.fondling796@passinbox.com",
         "url": "https://github.com/dandre3000/list"
     },
+    "keywords": [],
     "files": ["./List.js", "./List.d.ts"],
     "main": "./List.js",
     "types": "./List.d.ts",
     "scripts": {
-        "build": "bun build --entrypoints List.ts --outdir ./ --minify-whitespace --minify-syntax"
+        "build": "bun build --entrypoints List.ts --outdir ./ --minify-whitespace --minify-syntax",
+        "test": "bun run build && bun test"
     },
     "devDependencies": {
         "@types/bun": "^1.2.18",

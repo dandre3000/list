@@ -40,34 +40,10 @@ test(`ListNode[Symbol.hasInstance]`, () => {
 
 test(`ListNode.prototype.constructor`, () => {
     // no new operator
-    expect((() => {
-        try { ListNode(0, new List, 0) } catch (error) { return error }
-    })()).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => ListNode())).toBeInstanceOf(TypeError)
 
-    // list is not a List instance
-    expect((() => {
-        try { new ListNode(0, {}, 0) } catch (error) { return error }
-    })()).toBeInstanceOf(TypeError)
-
-    // index is not a number
-    expect((() => {
-        try { new ListNode(0, new List(), '0') } catch (error) { return error }
-    })()).toBeInstanceOf(TypeError)
-
-    // index is not an integer
-    expect((() => {
-        try { new ListNode(0, new List(), 0.1) } catch (error) { return error }
-    })()).toBeInstanceOf(RangeError)
-
-    // index is less than 0
-    expect((() => {
-        try { new ListNode(0, new List, -1) } catch (error) { return error }
-    })()).toBeInstanceOf(RangeError)
-
-    // index is greater than list.length()
-    expect((() => {
-        try { new ListNode(0, new List, 1) } catch (error) { return error }
-    })()).toBeInstanceOf(RangeError)
+    // node is not a ListNode instance
+    expect(returnThrow(() => new ListNode(0, {}))).toBeInstanceOf(TypeError)
 
     expect(new ListNode()).toBeInstanceOf(ListNode)
 })
@@ -104,7 +80,6 @@ test('List.prototype.at', () => {
     const values = new Array(2 + Math.round(Math.random() * 3)).fill(0).map(() => Math.random())
     const list = new List(...values)
 
-    expect(returnThrow(() => list.at('0'))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.at(0.1))).toBeInstanceOf(RangeError)
 
     expect(list.at(-1)).toBe(null)
@@ -119,9 +94,8 @@ test('List.prototype.at', () => {
 test('ListNode.prototype.list', () => {
     expect(new ListNode().list()).toBe(null)
 
-    const list = new List()
-    const index = Math.floor(Math.random() * list.length())
-    expect(new ListNode(0, list, index).list()).toBe(list)
+    const list = new List(1)
+    expect(list.first().list()).toBe(list)
 })
 
 test('ListNode.prototype.previous', () => {
@@ -187,7 +161,6 @@ test('ListNode.prototype.insertInto', () => {
     const list = new List(2 + Math.round(Math.random() * 3))
 
     expect(returnThrow(() => node1.insertInto({}, 0))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => node1.insertInto(list, '0'))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => node1.insertInto(list, 0.1))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => node1.insertInto(list, -1))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => node1.insertInto(list, list.length() + 1))).toBeInstanceOf(RangeError)
@@ -281,7 +254,6 @@ test('List.prototype.map', () => {
     const list = new List(2 + Math.round(Math.random() * 3))
 
     expect(returnThrow(() => list.map({}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.map(() => Math.random(), null, 'true'))).toBeInstanceOf(TypeError)
 
     const self = {}
     let count = 0
@@ -331,12 +303,10 @@ test('List.prototype.slice', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
     const listLength = list.length()
 
-    expect(returnThrow(() => list.slice('0', 0))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.slice(-1, 0))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.slice(listLength, 0))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.slice(0.1, 0))).toBeInstanceOf(RangeError)
 
-    expect(returnThrow(() => list.slice(0, '0'))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.slice(0, -1))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.slice(0, listLength))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.slice(0, 0.1))).toBeInstanceOf(RangeError)
@@ -408,12 +378,8 @@ test('List.prototype.reverse', () => {
 
 test('List.prototype.unshift', () => {
     const list = new List(Math.round(Math.random() * 5)).map(() => Math.random())
-
-    let values = new Array(2 ** 32 - 1)
-    expect(returnThrow(() => list.unshift(...values))).toBeInstanceOf(RangeError)
-
     const listLength = list.length()
-    values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
+    const values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
     
     expect(list.unshift(...values)).toBe(listLength + values.length)
     expect(list.first().value).toBe(values[0])
@@ -427,12 +393,8 @@ test('List.prototype.unshift', () => {
 
 test('List.prototype.push', () => {
     const list = new List(Math.round(Math.random() * 5)).map(() => Math.random())
-
-    let values = new Array(2 ** 32 - 1)
-    expect(returnThrow(() => list.push(...values))).toBeInstanceOf(RangeError)
-
     const listLength = list.length()
-    values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
+    const values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
     
     expect(list.push(...values)).toBe(listLength + values.length)
     expect(list.last().value).toBe(values[values.length - 1])
@@ -447,12 +409,8 @@ test('List.prototype.push', () => {
 test('List.prototype.insert', () => {
     const list = new List(Math.round(Math.random() * 5)).map(() => Math.random())
     const index = Math.round(Math.random() * list.length())
+    const values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
 
-    let values = new Array(2 ** 32 - 1)
-    expect(returnThrow(() => list.insert(index, ...values))).toBeInstanceOf(RangeError)
-
-    values = new Array(Math.ceil(Math.random() * 3)).map(() => Math.random())
-    expect(returnThrow(() => list.insert('0', ...values))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.insert(0.1, ...values))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.insert(-1, ...values))).toBeInstanceOf(RangeError)
 
@@ -507,7 +465,6 @@ test('List.prototype.pop', () => {
 test('List.prototype.remove', () => {
     const list = new List(Math.round(2 + Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.remove('0'))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.remove(-1))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.remove(list.length()))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.remove(0.1))).toBeInstanceOf(RangeError)
@@ -544,26 +501,20 @@ test('List.prototype.clear', () => {
 test('List.prototype.splice', () => {
     // list argument undefined
     let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
-
-    let newList = new List(2 ** 24 - 1)
-    expect(returnThrow(() => list.splice(0, 0, newList, 0))).toBeInstanceOf(RangeError)
-
     let listLength = list.length()
     let start = Math.floor(Math.random() * listLength)
     let end = Math.floor(Math.random() * listLength)
 
-    expect(returnThrow(() => list.splice('0', end))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.splice(-1, end))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.splice(listLength, end))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.splice(0.1, end))).toBeInstanceOf(RangeError)
 
-    expect(returnThrow(() => list.splice(start, '0'))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.splice(start, -1))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.splice(start, listLength))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.splice(start, 0.1))).toBeInstanceOf(RangeError)
 
     expect(returnThrow(() => list.splice(start, end, {}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.splice(start, end, new List, '0'))).toBeInstanceOf(TypeError)
+    expect(returnThrow(() => list.splice(start, end, new List))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.splice(start, end, new List, -1))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.splice(start, end, new List, listLength))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.splice(start, end, new List, 0.1))).toBeInstanceOf(RangeError)
@@ -578,7 +529,7 @@ test('List.prototype.splice', () => {
             unsplicedNodes.push(list.at(i))
     }
 
-    newList = list.splice(start, end)
+    let newList = list.splice(start, end)
     let newListLength = newList.length()
 
     expect(newList).toBeInstanceOf(List)
@@ -801,56 +752,44 @@ test('List.prototype.copyWithin', () => {
     let end = Math.floor(Math.random() * listLength)
     let index = Math.floor(Math.random() * listLength)
 
-    expect(returnThrow(() => list.copyWithin('0', end, index))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.copyWithin(-1, end, index))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.copyWithin(listLength, end, index))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.copyWithin(0.1, end, index))).toBeInstanceOf(RangeError)
 
-    expect(returnThrow(() => list.copyWithin(start, '0', index))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.copyWithin(start, -1, index))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.copyWithin(start, listLength, index))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.copyWithin(start, 0.1, index))).toBeInstanceOf(RangeError)
 
-    expect(returnThrow(() => list.copyWithin(start, end, '0'))).toBeInstanceOf(TypeError)
     expect(returnThrow(() => list.copyWithin(start, end, -1))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.copyWithin(start, end, listLength))).toBeInstanceOf(RangeError)
     expect(returnThrow(() => list.copyWithin(start, end, 0.1))).toBeInstanceOf(RangeError)
 
-    expect(returnThrow(() => list.copyWithin(start, end, index, 'true'))).toBeInstanceOf(TypeError)
-
     // targetEnd = false
-    let copy = list.slice(0, listLength - 1)
+    const values = list.values()
     expect(list.copyWithin(start, end, index)).toBe(list)
-    console.log('copyWithin', start, end, index, copy.toString(), list.toString())
     let i = 0
     let j = 0
     for (const { value } of list) {
         if (i >= index && i <= index + Math.abs(start - end)){
-            expect(value).toBe(copy.at(Math.min(start, end) + j).value)
+            expect(value).toBe(values[Math.min(start, end) + j])
             j++
         } else
-            expect(value).toBe(copy.at(i).value)
+            expect(value).toBe(values[i])
         i++
     }
 
     // targetEnd = true
-    list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
-    listLength = list.length()
-    copy = list.slice(0, listLength - 1)
-    start = Math.floor(Math.random() * listLength)
-    end = Math.floor(Math.random() * listLength)
-    index = Math.floor(Math.random() * listLength)
-    list.copyWithin(start, end, index, true)
-
+    list = new List(...values).copyWithin(start, end, index, true)
+    console.log(start, end, index, list.toString(), values.toString())
     i = 0
-    j = Math.min(start, end)
-    if (index < Math.abs(start - end)) j += Math.abs(start - end) - index
+    j = 0
     for (const { value } of list) {
         if (i >= index - Math.abs(start - end) && i <= index) {
-            expect(value).toBe(copy.at(j).value)
+            console.log(i, Math.max(start, end) - (index - i))
+            expect(value).toBe(values[Math.max(start, end) - (index - i)])
             j++
         } else
-            expect(value).toBe(copy.at(i).value)
+            expect(value).toBe(values[i])
         i++
     }
 })
@@ -858,7 +797,6 @@ test('List.prototype.copyWithin', () => {
 test('List.prototype.includes', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.includes(-1, 'true'))).toBeInstanceOf(TypeError)
     expect(list.includes(-1)).toBeFalse()
 
     const value = Math.random()
@@ -870,7 +808,6 @@ test('List.prototype.includes', () => {
 test('List.prototype.indexOf', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.indexOf(-1, 'true'))).toBeInstanceOf(TypeError)
     expect(list.indexOf(-1)).toBe(-1)
 
     // forwards
@@ -889,7 +826,6 @@ test('List.prototype.find', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
     expect(returnThrow(() => list.find({}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.find(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
 
     // forwards
     let value = Math.random() * -1
@@ -934,7 +870,6 @@ test('List.prototype.findIndex', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
     expect(returnThrow(() => list.findIndex({}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.findIndex(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
 
     // forwards
     let value = Math.random() * -1
@@ -979,7 +914,6 @@ test('List.prototype.some', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
     expect(returnThrow(() => list.some({}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.some(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
 
     // forwards
     let value = Math.random() * -1
@@ -1024,7 +958,6 @@ test('List.prototype.every', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
     expect(returnThrow(() => list.every({}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.every(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
 
     // forwards
     let value = Math.random()
@@ -1070,7 +1003,6 @@ test('List.prototype.reduce', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
     expect(returnThrow(() => list.reduce({}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.reduce(() => {}, 0, null, 'true'))).toBeInstanceOf(TypeError)
 
     // forwards
     let value
@@ -1101,7 +1033,6 @@ test('List.prototype.filter', () => {
     let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
     expect(returnThrow(() => list.filter({}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.filter(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
 
     // forwards
     const self = {}
@@ -1139,7 +1070,6 @@ test('List.prototype.forEach', () => {
     let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
     expect(returnThrow(() => list.forEach({}))).toBeInstanceOf(TypeError)
-    expect(returnThrow(() => list.forEach(() => {}, null, 'true'))).toBeInstanceOf(TypeError)
 
     // forwards
     const self = {}
@@ -1166,10 +1096,6 @@ test('List.prototype.forEach', () => {
 
 test('List.prototype.concat', () => {
     let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
-
-    expect(returnThrow(() => list.concat(new List(2 ** 24)))).toBeInstanceOf(RangeError)
-    expect(returnThrow(() => list.concat(...new Array(2 ** 24)))).toBeInstanceOf(RangeError)
-
     const concatValues = new Array(2 + Math.round(Math.random() * 3)).fill(0).map(() => Math.random())
     const concatList = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
     const flatValues = [...list.values(), ...concatValues]
@@ -1185,6 +1111,72 @@ test('List.prototype.concat', () => {
     let i = 0
     for (const node of newList) {
         expect(node.value).toBe(flatValues[i])
+        i++
+    }
+})
+
+test('List.prototype.sort', () => {
+    let list = new List(2 + Math.round(Math.random() * 3)).map(Math.random)
+
+    expect(returnThrow(() => list.sort({}))).toBeInstanceOf(TypeError)
+
+    let callback = (a, b) => {
+        return b.value - a.value
+    }
+    const values = list.slice().nodes().sort(callback).map(({ value }) => value)
+    expect(list.sort(callback)).toBe(list)
+    let i = 0
+    for (const node of list) {
+        expect(node.value).toBe(values[i])
+        if (node.next())
+            expect(node.value >= node.next().value).toBeTrue()
+        i++
+    }
+})
+
+test('List.prototype.flat', () => {
+    let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+
+    expect(returnThrow(() => list.flat(1.1))).toBeInstanceOf(RangeError)
+
+    let listDepth1 = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+    let depth1Index = Math.floor(Math.random() * list.length())
+    list.at(depth1Index).value = listDepth1
+
+    let values = [...list.values()]
+    let valuesDepth1 = listDepth1.values()
+    values[depth1Index] = valuesDepth1
+
+    let flatValues = values.flat()
+    expect(list.flat()).toBe(list)
+    expect(list.length()).toBe(flatValues.length)
+
+    let i = 0
+    for (const { value } of list) {
+        expect(value).toBe(flatValues[i])
+        i++
+    }
+
+    list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+    let listDepth2 = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
+    let depth2Index = Math.floor(Math.random() * listDepth1.length())
+    listDepth1.at(depth2Index).value = listDepth2
+    depth1Index = Math.floor(Math.random() * list.length())
+    list.at(depth1Index).value = listDepth1
+
+    values = [...list.values()]
+    valuesDepth1 = listDepth1.values()
+    values[depth1Index] = valuesDepth1
+    const valuesDepth2 = listDepth2.values()
+    valuesDepth1[depth2Index] = valuesDepth2
+
+    flatValues = values.flat(2)
+    expect(list.flat(2)).toBe(list)
+    expect(list.length()).toBe(flatValues.length)
+
+    i = 0
+    for (const { value } of list) {
+        expect(value).toBe(flatValues[i])
         i++
     }
 })

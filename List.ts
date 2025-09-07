@@ -6,10 +6,10 @@ type ListNodeData<T> = {
     next: ListNodeData<T> | null
 }
 
+let newListNodeData: ListNodeData<any>
+
 /** All #data property objects are stored here. */
 const privateDataMap: WeakMap<ListNode<any> | List<any>, ListNodeData<any> | ListData<any>> = new Map
-
-const thisIsNotAListNode = '"this" is not an instance of ListNode'
 
 /** A doubly linked list node. */
 export class ListNode<T> {
@@ -20,132 +20,80 @@ export class ListNode<T> {
     }
 
     #data: ListNodeData<T>
+
     value: T
+
+    [Symbol.toStringTag] = this.constructor.name
 
     /**
      * Create a ListNode instance.
-     * @throws { TypeError } if called without the new operator
+     * @param value The value this node will contain.
      */
     constructor (value: T)
 
     /**
-     * Create a ListNode instance and insert it into a list at the given index.
-     * @throws { TypeError } if called without the new operator
-     * @throws { TypeError } if list is not a List instance
-     * @throws { RangeError } if the length of list >= 2 ** 24 - 1
-     * @throws { TypeError } if index is not a number
-     * @throws { RangeError } if index is not an integer greater than -1 or less than the length of list + 1
+     * Create a ListNode instance and append or prepend it to another node.
+     * @param value The value this node will contain.
+     * @param node The node that will be appended or prepended with this.
+     * @param append If the append argument is truthy then append this to node else prepend this to node. (default false)
+     * @throws { TypeError } if node is not a ListNode instance
+     * @throws { RangeError } if node.list().length() would exceed List.maxLength
      */
-    constructor (value: T, list: List<T>, index: number)
+    constructor (value: T, node: ListNode<T>, append?)
 
-    constructor (value: T, list?: List<T>, index?: number) {
-        if (!new.target) throw new TypeError('List.constructor')
+    constructor (value: T, node?: ListNode<T>, append = false) {
+        let targetNodeData: ListNodeData<T>
+        let targetListData: ListData<T> | null = null
 
-        const currentNodeData: ListNodeData<T> = this.#data = {
+        if (node !== undefined) {
+            try { targetNodeData = node.#data } catch (error) {
+                throw new TypeError(`node argument (${Object.prototype.toString.call(node)}) is not a ListNode instance`)
+            }
+
+            targetListData = targetNodeData.listData
+
+            if (targetListData !== null && targetListData.length >= List.maxLength)
+                throw new RangeError(`node.list().length() (${targetListData.length}) would exceed List.maxLength (16777216)`)
+        }
+
+        const currentNodeData: ListNodeData<T> = newListNodeData = this.#data = {
             node: this,
-            listData: null,
+            listData: targetListData,
             previous: null,
             next: null
         }
 
         this.value = value
 
-        const listData = privateDataMap.get(list) as ListData<T>
+        if (!targetNodeData) return
 
-        if (listData !== undefined) {
-            if (listData.length >= List.maxLength)
-                throw new RangeError('argument list length >= 2 ** 24 - 1')
+        if (!targetListData) {
+            targetNodeData.listData = targetListData = privateDataMap.get(new List) as ListData<T>
+            targetListData.first = targetListData.last = targetNodeData
+            targetListData.length = 2
+            currentNodeData.listData = targetListData
+        } else
+            targetListData.length++
 
-            if (typeof index !== 'number')
-                throw new TypeError('argument index is not a number')
-            if (!Number.isInteger(index))
-                throw new RangeError('argument index is not an integer')
-            else if (index < 0 || index > listData.length)
-                throw new RangeError('argument index is not valid')
+        if (!!append === true) {
+            if (targetNodeData.next) {
+                targetNodeData.next.previous = currentNodeData
+                currentNodeData.next = targetNodeData.next
+            } else
+                targetListData.last = currentNodeData
 
-            let targetNodeData: ListNodeData<T> | null = null
-            let append = false
+            currentNodeData.previous = targetNodeData
+            targetNodeData.next = currentNodeData
+        } else {
+            if (targetNodeData.previous) {
+                targetNodeData.previous.next = currentNodeData
+                currentNodeData.previous = targetNodeData.previous
+            } else
+                targetListData.first = currentNodeData
 
-            currentNodeData.listData = listData
-
-            // empty list
-            if (listData.length === 0) {
-                listData.first = listData.last = currentNodeData
-                listData.length = 1
-
-                return
-            }
-            // unshift; list length >= 1
-            else if (index === 0) {
-                targetNodeData = listData.first
-            // last node; list length >= 2
-            } else if (index >= listData.length - 1) {
-                // prepend
-                targetNodeData = listData.last
-
-                // append
-                if (index === listData.length) append = true
-            // get target node; list length >= 3
-            } else {
-                let currentNodeData: ListNodeData<T> | null
-                let forwards: boolean
-                let i: number
-
-                // only search half the list
-                if (index < listData.length / 2) {
-                    forwards = true
-
-                    // skip first node
-                    currentNodeData = (listData.first as ListNodeData<T>).next
-                    i = 1
-                } else {
-                    forwards = false
-
-                    // skip last node
-                    currentNodeData = (listData.last as ListNodeData<T>).previous
-                    i = listData.length - 2
-                }
-
-                while (currentNodeData) {
-                    if (index === i) {
-                        targetNodeData = currentNodeData
-
-                        break
-                    }
-
-                    if (forwards) {
-                        currentNodeData = currentNodeData.next
-                        i++
-                    } else {
-                        currentNodeData = currentNodeData.previous
-                        i--
-                    }
-                }
-            }
-
-            if (append) {
-                if ((targetNodeData as ListNodeData<T>).next) {
-                    ((targetNodeData as ListNodeData<T>).next as ListNodeData<T>).previous = currentNodeData
-                    currentNodeData.next = (targetNodeData as ListNodeData<T>).next
-                } else
-                    listData.last = currentNodeData
-    
-                currentNodeData.previous = targetNodeData;
-                (targetNodeData as ListNodeData<T>).next = currentNodeData
-            } else {
-                if ((targetNodeData as ListNodeData<T>).previous) {
-                    ((targetNodeData as ListNodeData<T>).previous as ListNodeData<T>).next = currentNodeData
-                    currentNodeData.previous = (targetNodeData as ListNodeData<T>).previous
-                } else
-                    listData.first = currentNodeData
-    
-                currentNodeData.next = targetNodeData;
-                (targetNodeData as ListNodeData<T>).previous = currentNodeData
-            }
-    
-            listData.length++
-        } else if (list !== undefined)
-            throw new TypeError('argument list is not a List instance')
+            currentNodeData.next = targetNodeData
+            targetNodeData.previous = currentNodeData
+        }
     }
 
     /**
@@ -153,7 +101,9 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      */
     list (): List<T> | null {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
+        }
 
         return this.#data.listData ? this.#data.listData.list : null
     }
@@ -164,7 +114,9 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      */
     previous (): ListNode<T> | null {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
+        }
 
         return this.#data.previous ? this.#data.previous.node : null
     }
@@ -175,44 +127,53 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      */
     next (): ListNode<T> | null {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
+        }
 
         return this.#data.next ? this.#data.next.node : null
     }
 
     /**
      * Remove this node from its containing list and prepend it to another node.
+     * @param node The node that will be prepended with this.
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
-     * @throws { RangeError } if the node's list length >= 2 ** 24 - 1
+     * @throws { RangeError } if node.list().length() would exceed List.maxLength (16777216)
      */
     prependTo (node: ListNode<T>) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
-
-        let targetNodeData = node.#data
-        let targetListData = targetNodeData.listData
-
-        if (node === this)
-            throw new ReferenceError('node')
-        else if (targetListData && targetListData.length >= List.maxLength)
-            throw new RangeError('length')
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
+        }
 
         const currentNodeData = this.#data
+        let targetNodeData: ListNodeData<T>
 
-        // already prepended to node
-        if (currentNodeData === targetNodeData.previous) return this
+        try { targetNodeData = node.#data } catch (error) {
+            throw new TypeError(`node argument (${Object.prototype.toString.call(node)}) is not a ListNode instance`)
+        }
 
-        // create new list if node is not in one
-        if (!targetListData) {
-            targetNodeData.listData = targetListData = privateDataMap.get(new List) as ListData<T>
+        let targetListData = targetNodeData.listData
+
+        if (targetListData) {
+            if (targetListData.length >= List.maxLength)
+                throw new RangeError(`node.list().length() (${targetListData.length}) would exceed List.maxLength (16777216)`)
+
+            // already prepended to node
+            if (currentNodeData === targetNodeData.previous) return this
+
+            targetListData.length++
+        } // create new list if node is not in one
+        else {
+            new List
+            targetNodeData.listData = targetListData = newListData
             targetListData.first = targetNodeData
             targetListData.last = targetNodeData
             targetListData.length = 1
-        } else if (targetListData.length + 1 > List.maxLength)
-            throw new RangeError('List length')
+        }
 
-        const currentListData = this.#data.listData
+        const currentListData = currentNodeData.listData
 
         // remove from current list
         if (currentListData) {
@@ -240,8 +201,6 @@ export class ListNode<T> {
         currentNodeData.next = targetNodeData
         targetNodeData.previous = currentNodeData
 
-        targetListData.length++
-
         return this
     }
 
@@ -250,32 +209,38 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
-     * @throws { RangeError } if the node's list length >= 2 ** 24 - 1
+     * @throws { RangeError } if the node's list length would exceed List.maxLength (16777216)
      */
     appendTo (node: ListNode<T>) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
-
-        let targetNodeData = node.#data
-        let targetListData = targetNodeData.listData
-
-        if (node === this)
-            throw new ReferenceError('node')
-        else if (targetListData && targetListData.length >= List.maxLength)
-            throw new RangeError('length')
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
+        }
 
         const currentNodeData = this.#data
+        let targetNodeData: ListNodeData<T>
 
-        // already prepended to node
-        if (currentNodeData === targetNodeData.previous) return this
+        try { targetNodeData = node.#data } catch (error) {
+            throw new TypeError(`node argument (${Object.prototype.toString.call(node)}) is not a ListNode instance`)
+        }
 
-        // create new list if node is not in one
-        if (!targetListData) {
-            targetNodeData.listData = targetListData = privateDataMap.get(new List) as ListData<T>
+        let targetListData = targetNodeData.listData
+
+        if (targetListData) {
+            if (targetListData.length >= List.maxLength)
+                throw new RangeError(`node.list().length() (${targetListData.length}) would exceed List.maxLength (16777216)`)
+
+            // already appended to node
+            if (currentNodeData === targetNodeData.next) return this
+
+            targetListData.length++
+        } // create new list if node is not in one
+        else {
+            new List
+            targetNodeData.listData = targetListData = newListData
             targetListData.first = targetNodeData
             targetListData.last = targetNodeData
             targetListData.length = 1
-        } else if (targetListData.length + 1 > List.maxLength)
-            throw new RangeError('List length')
+        }
 
         const currentListData = this.#data.listData
 
@@ -311,32 +276,36 @@ export class ListNode<T> {
     }
 
     /**
-     * Remove this node from its containing list and insert it into another list at the given index.
+     * Remove this node from its containing list and insert it into another list.
+     * @param list The list that will contain this node.
+     * @param index The position in the list that this node will occupy. (default 0)
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if list is not a List instance
-     * @throws { RangeError } if list length >= 2 ** 24 - 1
-     * @throws { TypeError } if index is not a number
-     * @throws { RangeError } if index is not an integer greater than -1 or less than the length of list + 1
+     * @throws { RangeError } if list length would exceed List.maxLength (16777216)
+     * @throws { RangeError } if index is not an integer greater than -1 and less than list.length() + 1
      */
-    insertInto (list: List<T>, index: number) {
-        let currentNodeData = this.#data
+    insertInto (list: List<T>, index = 0) {
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
+        }
 
-        try { currentNodeData } catch (error) { throw new TypeError(thisIsNotAListNode) }
+        if (!(list instanceof List)) throw new TypeError(`list argument (${list}) is not a List instance`)
 
         const targetListData = privateDataMap.get(list) as ListData<T>
 
-        if (targetListData === undefined)
-            throw new TypeError('list')
-        else if (targetListData.length >= List.maxLength)
-            throw new RangeError('list.length() >= 2 ** 24 - 1')
+        if (targetListData.length >= List.maxLength)
+            throw new RangeError(`list.length() (${targetListData.length}) + 1 would exceed List.maxLength (16777216)`)
 
-        if (typeof index !== 'number')
-            throw new TypeError('argument index is not a number')
-        else if (!Number.isInteger(index))
-            throw new RangeError('argument index is not an integer')
-        else if (index < 0 || index > targetListData.length)
-            throw new RangeError('argument index is not valid')
+        index = Number(index)
 
+        if (!Number.isInteger(index))
+            throw new RangeError(`index argument (${index}) is not an integer`)
+        else if (index < 0)
+            throw new RangeError(`index argument (${index}) is less than 0`)
+        else if (index > targetListData.length)
+            throw new RangeError(`index argument (${index}) is greater than list.length()`)
+
+        let currentNodeData = this.#data
         const currentListData = currentNodeData.listData
 
         // remove
@@ -366,71 +335,68 @@ export class ListNode<T> {
             targetListData.length = 1
 
             return this
-        }
-        // unshift; list length >= 1
+        } // first node; list length >= 1
         else if (index === 0) {
             targetNodeData = targetListData.first
-        // last node; list length >= 2
-        } else if (index >= targetListData.length - 1) {
+        } // last node; list length >= 2
+        else if (index >= targetListData.length - 1) {
             // prepend
             targetNodeData = targetListData.last
 
             // append
             if (index === targetListData.length) append = true
-        // get target node; list length >= 3
+        // get target node; list length >= 3; O (n / 2)
         } else {
-            let forwards: boolean
             let i: number
 
-            // only search half the list
+            // forwards
             if (index < targetListData.length / 2) {
-                forwards = true
-
                 // skip first node
                 targetNodeData = (targetListData.first as ListNodeData<T>).next
                 i = 1
-            } else {
-                forwards = false
 
+                while (targetNodeData) {
+                    if (index === i) break
+    
+                    targetNodeData = targetNodeData.next
+                    i++
+                }
+            } // backwards
+            else {
                 // skip last node
                 targetNodeData = (targetListData.last as ListNodeData<T>).previous
                 i = targetListData.length - 2
-            }
 
-            while (targetNodeData) {
-                if (index === i) break
-
-                if (forwards) {
-                    targetNodeData = targetNodeData.next
-                    i++
-                } else {
+                while (targetNodeData) {
+                    if (index === i) break
+    
                     targetNodeData = targetNodeData.previous
                     i--
                 }
             }
         }
 
+        targetListData.length++
+
         if (append) {
-            if ((targetNodeData as ListNodeData<T>).next) {
-                ((targetNodeData as ListNodeData<T>).next as ListNodeData<T>).previous = currentNodeData
-                currentNodeData.next = (targetNodeData as ListNodeData<T>).next
+            if (targetNodeData.next) {
+                targetNodeData.next.previous = currentNodeData
+                currentNodeData.next = targetNodeData.next
             } else
                 targetListData.last = currentNodeData
 
-            currentNodeData.previous = targetNodeData;
-            (targetNodeData as ListNodeData<T>).next = currentNodeData
+            currentNodeData.previous = targetNodeData
+            targetNodeData.next = currentNodeData
         } else {
-            if ((targetNodeData as ListNodeData<T>).previous) {
-                ((targetNodeData as ListNodeData<T>).previous as ListNodeData<T>).next = currentNodeData
-                currentNodeData.previous = (targetNodeData as ListNodeData<T>).previous
+            if (targetNodeData.previous) {
+                targetNodeData.previous.next = currentNodeData
+                currentNodeData.previous = targetNodeData.previous
             } else
                 targetListData.first = currentNodeData
 
-            currentNodeData.next = targetNodeData;
-            (targetNodeData as ListNodeData<T>).previous = currentNodeData
+            currentNodeData.next = targetNodeData
+            targetNodeData.previous = currentNodeData
         }
-
-        targetListData.length++
 
         return this
     }
@@ -440,26 +406,28 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      */
     remove() {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAListNode) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
+        }
 
-        const currentNodeData = this.#data
-        const currentListData = currentNodeData.listData
+        const nodeData = this.#data
+        const listData = nodeData.listData
 
-        if (currentListData) {
-            if (currentNodeData.previous)
-                currentNodeData.previous.next = currentNodeData.next
+        if (listData) {
+            if (nodeData.previous)
+                nodeData.previous.next = nodeData.next
             else
-                currentListData.first = currentNodeData.next
-            if (currentNodeData.next)
-                currentNodeData.next.previous = currentNodeData.previous
+                listData.first = nodeData.next
+            if (nodeData.next)
+                nodeData.next.previous = nodeData.previous
             else
-                currentListData.last = currentNodeData.previous
+                listData.last = nodeData.previous
 
-            currentNodeData.previous = null
-            currentNodeData.next = null
+            nodeData.previous = null
+            nodeData.next = null
 
-            currentListData.length--
-            currentNodeData.listData = null
+            listData.length--
+            nodeData.listData = null
         }
 
         return this
@@ -474,12 +442,12 @@ type ListData<T> = {
     length: number
 }
 
-const thisIsNotAList = '"this" is not an instance of List'
+let newListData: ListData<any>
 
 /** Doubly linked list */
 export class List<T> implements Iterable<ListNode<T>> {
     /** The maximum length of all lists. */
-    static readonly maxLength = 2 ** 24 - 1
+    static readonly maxLength = 2 ** 24 // 16777216
 
     static [Symbol.hasInstance] (instance) {
         try { instance.#data } catch (error) { return false }
@@ -489,45 +457,66 @@ export class List<T> implements Iterable<ListNode<T>> {
 
     #data: ListData<T>
 
+    [Symbol.toStringTag] = this.constructor.name
+
     /**
      * Create a List instance with the specified length where all node values are undefined.
-     * @throws {TypeError} if called without the new operator
-     * @throws {RangeError} if length is not an integer greater than -1 or less than 2 ** 32
+     * @param length The amount of nodes this list will initially contain.
+     * @throws {RangeError} if length is not an integer greater than -1 and less than List.maxLength (16777216)
      */
     constructor (length: number)
 
     /**
      * Create a List instance and insert the given values.
-     * @throws { TypeError } if called without the new operator
+     * @param values The values this list will initially contain.
      */
     constructor (...values: T[])
 
     constructor (...values: T[]) {
-        if (!new.target) throw new TypeError('List.constructor')
-
-        // setup this
-        this.#data = {
+        const listData = newListData = this.#data = {
             list: this,
             first: null,
             last: null,
             length: 0
         }
 
-        privateDataMap.set(this, this.#data)
+        privateDataMap.set(this, listData)
 
         const length = values[0] as number
 
         // fill with undefined
         if (values.length === 1 && typeof length === 'number') {
-            if (!Number.isInteger(length) || length < 0 || length > List.maxLength) throw new RangeError('length')
+            if (!Number.isInteger(length))
+                throw new RangeError(`length argument (${length}) is not an integer`)
+            else if (length < 0)
+                throw new RangeError(`length argument (${length}) is less than 0`)
+            else if (length > List.maxLength)
+                throw new RangeError(`length argument (${length}) is greater than List.maxLength (16777216)`)
 
-            for (let i = 0 as number; i < length; i++) {
-                new ListNode(undefined, this, 0)
+            if (length > 0) {
+                new ListNode(undefined)
+
+                newListNodeData.listData = listData
+                listData.first = listData.last = newListNodeData
+                listData.length = 1
             }
-        }
-        // fill with values
-        else for (const value of values) {
-            new ListNode(value, this, this.#data.length)
+
+            for (let i = 1; i < length; i++) {
+                new ListNode(undefined, newListNodeData.node, true)
+            }
+        } // fill with values
+        else {
+            if (values.length > 0) {
+                new ListNode(values[0])
+
+                newListNodeData.listData = listData
+                listData.first = listData.last = newListNodeData
+                listData.length = 1
+            }
+
+            for (let i = 1; i < values.length; i++) {
+                new ListNode(values[i], newListNodeData.node, true)
+            }
         }
     }
 
@@ -536,7 +525,9 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     first () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         return (this.#data.first ? this.#data.first.node : null)
     }
@@ -546,72 +537,65 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     last () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         return this.#data.last ? this.#data.last.node : null
     }
 
     /**
-     * Return the length of this list.
+     * Return the node at the given index or null if index is out of bounds.
+     * @param index The position of the node.
      * @throws { TypeError } if this is not a List instance
-     */
-    length () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
-
-        return this.#data.length
-    }
-
-    /**
-     * Return the node at the given index or null if index is less than -1 or greater than this length - 1
-     * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if index is not a number
-     * @throws { RangeError } if index is not an integer
+     * @throws { RangeError } if index is not an integer greater than -1 and less than this.length() - 1
      */
     at (index: number): ListNode<T> | null {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof index !== 'number') throw new TypeError('index')
+        const listData = this.#data
 
-        const currentListData = this.#data
+        index = Number(index)
 
-        if (index < 0 || index >= currentListData.length) return null
-        else if (!Number.isInteger(index)) throw new RangeError('index')
+        if (!Number.isInteger(index))
+            throw new RangeError(`index argument (${index}) is not an integer`)
+        else if (index < 0 || index > listData.length - 1)
+            return null
 
         let nodeData: ListNodeData<T> | null
 
         // first; length >= 1
         if (index === 0)
-            nodeData = currentListData.first
+            nodeData = listData.first
         // last; length >= 2
-        else if (index === currentListData.length - 1)
-            nodeData = currentListData.last
+        else if (index === listData.length - 1)
+            nodeData = listData.last
         // get node; length >= 3
         else {
-            let forwards: boolean
             let i: number
 
             // only search half the list
-            if (index < (currentListData.length) / 2) {
-                forwards = true
+            if (index < (listData.length) / 2) {
                 // skip first node
-                nodeData = (currentListData.first as ListNodeData<T>).next
+                nodeData = (listData.first as ListNodeData<T>).next
                 i = 1
-            } else {
-                forwards = false
-                // skip last node
-                nodeData = (currentListData.last as ListNodeData<T>).previous
-                i = currentListData.length - 2
-            }
 
-            while (nodeData) {
-                if (index === i) {
-                    break
-                }
-        
-                if (forwards) {
+                while (nodeData) {
+                    if (index === i) break
+            
                     nodeData = nodeData.next
                     i++
-                } else {
+                }
+            } else {
+                // skip last node
+                nodeData = (listData.last as ListNodeData<T>).previous
+                i = listData.length - 2
+
+                while (nodeData) {
+                    if (index === i) break
+            
                     nodeData = nodeData.previous
                     i--
                 }
@@ -622,58 +606,187 @@ export class List<T> implements Iterable<ListNode<T>> {
     }
 
     /**
-     * Add the given values to the front of this list and return this length.
+     * Return the length of this list.
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if list length would be greater than 2 ** 24 - 1
+     */
+    length () {
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
+
+        return this.#data.length
+    }
+
+    /**
+     * Insert the values to the front of this list and return this length.
+     * @param values The values to be inserted.
+     * @throws { TypeError } if this is not a List instance
+     * @throws { RangeError } if list.length() would exceed List.maxLength (16777216)
      */
     unshift (...values: T[]) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (this.#data.length + values.length > List.maxLength) throw new RangeError('length')
+        let listData = this.#data
 
-        for (let i = 0; i < values.length; i++) {
-            new ListNode(values[i], this, i)
+        if (listData.length + values.length > List.maxLength)
+            throw new RangeError(`this().length() (${listData.length}) would exceed List.maxLength (16777216)`)
+
+        if (values.length > 0) {
+            let i = values.length - 1
+
+            if (listData.length === 0) {
+                new ListNode(values[i])
+                newListNodeData.listData = listData
+
+                listData.first = listData.last = newListNodeData
+                listData.length = 1
+
+                i--
+            }
+
+            for (i; i > -1; i--) {
+                new ListNode(values[i], listData.first.node)
+            }
         }
 
         return this.#data.length
     }
 
     /**
-     * Add the given values to the end of this list and return this length.
+     * Insert the values to the end of this list and return this length.
+     * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if list length would be greater than 2 ** 24 - 1
+     * @throws { RangeError } if list.length() would exceed List.maxLength (2 ** 24 - 1)
      */
     push (...values: T[]) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (this.#data.length + values.length > List.maxLength) throw new RangeError('length')
+        let listData = this.#data
 
-        for (const value of values) {
-            new ListNode(value, this, this.#data.length)
+        if (this.#data.length + values.length > List.maxLength)
+            throw new RangeError(`this().length() (${listData.length}) would exceed List.maxLength (16777216)`)
+
+        if (values.length > 0) {
+            let i = 0
+
+            if (listData.length === 0) {
+                new ListNode(values[i])
+                newListNodeData.listData = listData
+
+                listData.first = listData.last = newListNodeData
+                listData.length = 1
+
+                i = 1
+            }
+
+            for (i; i < values.length; i++) {
+                new ListNode(values[i], this.#data.last.node, true)
+            }
         }
 
         return this.#data.length
     }
 
     /**
-     * Insert the given values into this list at the given index and return this length.
+     * Insert the values into this list at the given index and return this length.
+     * @param index The position where values will be inserted.
+     * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if index is not a number
      * @throws { RangeError } if index is not an integer greater than -1 or less than this length + 1
-     * @throws { RangeError } if list length would be greater than 2 ** 24 - 1
+     * @throws { RangeError } if list.length() would exceed List.maxLength (2 ** 24 - 1)
      */
     insert (index: number, ...values: T[]) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
-
-        const valuesLength = values.length
-
-        if (this.#data.length + valuesLength > List.maxLength) throw new RangeError('length')
-
-        for (let i = 0; i < valuesLength; i++) {
-            new ListNode(values[i], this, index + i)
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
         }
 
-        return this.#data.length
+        const listData = this.#data
+        const valuesLength = values.length
+
+        if (listData.length + valuesLength > List.maxLength)
+            throw new RangeError(`this().length() (${listData.length}) would exceed List.maxLength (16777216)`)
+
+        index = Number(index)
+
+        if (!Number.isInteger(index))
+            throw new RangeError(`index argument (${index}) is not an integer`)
+        else if (index < 0)
+            throw new RangeError(`index argument (${index}) is less than 0`)
+        else if (index > listData.length)
+            throw new RangeError(`index argument (${index}) is greater than this.length() (${listData.length})`)
+
+        let nodeData: ListNodeData<T>
+        let append = false
+        let i = valuesLength - 1
+
+        // first node; target list length >= 1
+        if (index === 0) {
+            if (listData.length === 0) {
+                new ListNode(values[i])
+                newListNodeData.listData = listData
+
+                listData.first = listData.last = newListNodeData
+                listData.length = 1
+
+                i--
+            }
+
+            nodeData = listData.first
+        }
+        // last node; target list length >= 2
+        else if (index >= listData.length - 1) {
+            nodeData = listData.last
+
+            if (index === listData.length) {
+                append = true
+                i = 0
+            }
+        }
+        // get node; target list length >= 3; O (n / 2)
+        else {
+            let i: number
+
+            // forwards
+            if (index < (listData.length) / 2) {
+                // skip first node
+                nodeData = (listData.first as ListNodeData<T>).next
+                i = 1
+
+                while (nodeData !== null) {
+                    if (index === i) break
+
+                    nodeData = nodeData.next
+                    i++
+                }
+            }
+            // backwards
+            else {
+                // skip last node
+                nodeData = (listData.last as ListNodeData<T>).previous
+                i = listData.length - 2
+
+                while (nodeData !== null) {
+                    if (index === i) break
+
+                    nodeData = nodeData.previous
+                    i--
+                }
+            }
+        }
+
+        let node = nodeData.node
+
+        if (append) for (i; i < valuesLength; i++) {
+            node = new ListNode(values[i], node, append)
+        } else for (i; i > -1; i--) {
+            node = new ListNode(values[i], node)
+        }
+
+        return listData.length
     }
 
     /**
@@ -681,24 +794,26 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     shift () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        const currentListData = this.#data
+        const listData = this.#data
 
         // empty
-        if (!currentListData.first) {
+        if (!listData.first) {
             return null
         } else {
             // remove first node from this
-            const nodeData = currentListData.first
+            const nodeData = listData.first
 
             if (nodeData.next) {
                 nodeData.next.previous = null
-                currentListData.first = nodeData.next
+                listData.first = nodeData.next
             } else
-                currentListData.first = currentListData.last = null
+                listData.first = listData.last = null
 
-            currentListData.length--
+            listData.length--
 
             nodeData.previous = null
             nodeData.next = null
@@ -713,24 +828,26 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     pop () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        const currentListData = this.#data
+        const listData = this.#data
 
         // empty
-        if (!currentListData.last) {
+        if (!listData.last) {
             return null
         } else {
             // remove last node from this
-            const nodeData = currentListData.last
+            const nodeData = listData.last
 
             if (nodeData.previous) {
                 nodeData.previous.next = null
-                currentListData.last = nodeData.previous
+                listData.last = nodeData.previous
             } else
-                currentListData.first = currentListData.last = null
+                listData.first = listData.last = null
 
-            currentListData.length--
+            listData.length--
 
             nodeData.previous = null
             nodeData.next = null
@@ -742,40 +859,46 @@ export class List<T> implements Iterable<ListNode<T>> {
 
     /**
      * Remove a node from this list at the given index and return it.
+     * @param index The position of the node.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if index is not a number
      * @throws { RangeError } if index is not an integer greater than -1 or less than this length
      */
     remove (index: number) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof index !== 'number') throw new TypeError('index')
-        else if (!Number.isInteger(index)) throw new RangeError('index')
-        
-        const currentListData = this.#data
+        const listData = this.#data
 
-        if (index < 0 || index > currentListData.length - 1) throw new RangeError('index')
+        index = Number(index)
+
+        if (!Number.isInteger(index))
+            throw new RangeError(`index argument (${index}) is not an integer`)
+        else if (index < 0)
+            throw new RangeError(`index argument (${index}) is less than 0`)
+        else if (index > listData.length - 1)
+            throw new RangeError(`index argument (${index}) is greater than this.length() - 1`)
 
         let nodeData: ListNodeData<T> | null = null
 
         if (index === 0)
-            nodeData = currentListData.first
-        else if (index === currentListData.length - 1)
-            nodeData = currentListData.last
+            nodeData = listData.first
+        else if (index === listData.length - 1)
+            nodeData = listData.last
         else {
             let forwards: boolean
             let i: number
 
             // forwards
-            if (index < (currentListData.length) / 2) {
+            if (index < (listData.length) / 2) {
                 forwards = true
-                nodeData = (currentListData.first as ListNodeData<T>).next as ListNodeData<T>
+                nodeData = (listData.first as ListNodeData<T>).next as ListNodeData<T>
                 i = 1
             // backwards
             } else {
                 forwards = false
-                nodeData = (currentListData.last as ListNodeData<T>).previous as ListNodeData<T>
-                i = currentListData.length - 2
+                nodeData = (listData.last as ListNodeData<T>).previous as ListNodeData<T>
+                i = listData.length - 2
             }
 
             while (nodeData) {
@@ -808,7 +931,7 @@ export class List<T> implements Iterable<ListNode<T>> {
         nodeData.next = null
         nodeData.listData = null
 
-        currentListData.length--
+        listData.length--
 
         return nodeData.node
     }
@@ -818,14 +941,16 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     clear () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        let currentListData = this.#data
-        let nodeData = currentListData.first
+        let listData = this.#data
+        let nodeData = listData.first
 
-        currentListData.first = null
-        currentListData.last = null
-        currentListData.length = 0
+        listData.first = null
+        listData.last = null
+        listData.length = 0
 
         while (nodeData) {
             const next = nodeData.next
@@ -843,7 +968,10 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Move one or more consecutive nodes from this list and insert them into a new list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
-     * Therefore start or end can be the higher index, (List instance).splice(start, end, ...) and (List instance).splice(end, start, ...) are the same operation.
+     * Therefore start or end can be the higher index, (List instance).splice(start, end, ...)
+     * and (List instance).splice(end, start, ...) are the same operation.
+     * @param start The position that along with end determines the range of nodes to move.
+     * @param end The position that along with start determines the range of nodes to move.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start or end is not an integer
      * @throws { RangeError } if start or end is less than 0 or greater than or equal to this length
@@ -851,59 +979,86 @@ export class List<T> implements Iterable<ListNode<T>> {
     splice (start: number, end: number): List<T>
 
     /**
-     * Move one or more consecutive nodes from this list then insert them back into this or into another list at the given index.
+     * Move one or more consecutive nodes from this list then insert them back into this or into another list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
-     * Therefore start or end can be the higher index, (List instance).splice(start, end, ...) and (List instance).splice(end, start, ...) are the same operation.
+     * Therefore start or end can be the higher index, (List instance).splice(start, end, ...)
+     * and (List instance).splice(end, start, ...) are the same operation.
+     * @param start The position that along with end determines the range of nodes to move.
+     * @param end The position that along with start determines the range of nodes to move.
+     * @param target The position in list where the nodes will be inserted.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if start or end is not a number
      * @throws { RangeError } if start or end is not an integer greater than -1 or less than this length
      * @throws { TypeError } if list is not a List instance
-     * @throws { RangeError } if list length would be greater than 2 ** 24 - 1
-     * @throws { TypeError } if index is not a number
-     * @throws { RangeError } if index is not a integer greater than -1 or less than list length (minus number of nodes to be moved if list === this) + 1
+     * @throws { RangeError } if list.length() would exceed List.maxLength (16777216)
+     * @throws { TypeError } if list is defined but target is undefined
+     * @throws { RangeError } if list is defined but target is not a integer greater than -1
+     * or less than list length (minus number of nodes to be moved if list === this) + 1
      */
-    splice (start: number, end: number, list: List<T>, index: number): List<T>
+    splice (start: number, end: number, list: List<T>, target: number): List<T>
 
-    splice (start: number, end: number, list?: List<T>, index?: number) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+    splice (start: number, end: number, list?: List<T>, target?: number) {
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
 
-        if (typeof start !== 'number')
-            throw new TypeError('start')
-        else if (!Number.isInteger(start))
-            throw new RangeError('start')
-        else if (start < 0 || start > currentListData.length - 1)
-            throw new RangeError('start')
+        start = Number(start)
 
-        if (typeof end !== 'number')
-            throw new TypeError('end')
+        if (!Number.isInteger(start))
+            throw new RangeError(`start argument (${start}) is not an integer`)
+        else if (start < 0)
+            throw new RangeError(`start argument (${start}) is less than 0`)
+        else if (start > currentListData.length - 1)
+            throw new RangeError(`start argument (${start}) is greater than this.length - 1`)
+
+        end = Number(end)
+
         if (!Number.isInteger(end))
-            throw new RangeError('end')
-        else if (end < 0 || end > currentListData.length - 1)
-            throw new RangeError('end')
+            throw new RangeError(`end argument (${end}) is not an integer`)
+        else if (end < 0)
+            throw new RangeError(`end argument (${end}) is less than 0`)
+        else if (end > currentListData.length - 1)
+            throw new RangeError(`end argument (${end}) is greater than this.length - 1`)
 
         const rangeLength = Math.abs(start - end) + 1
-        let targetListData: ListData<T> | null = null
+        let targetListData: ListData<T>
 
-        if (list instanceof List) {
+        if (list !== undefined) {
+            try { this.#data } catch (error) {
+                throw new TypeError(`list argument (${Object.prototype.toString.call(list)}) is not a List instance`)
+            }
+
             targetListData = list.#data
 
-            if (typeof index !== 'number')
-                throw new TypeError('index')
-            else if (!Number.isInteger(index))
-                throw new RangeError('index')
-            else if (index < 0 || index > (currentListData === targetListData ? targetListData.length - rangeLength : targetListData.length))
-                throw new RangeError('index')
-            else if (currentListData !== targetListData && targetListData.length + rangeLength > List.maxLength)
-                throw new RangeError('List length')
-        } else if (list === undefined) {
-            targetListData = new List<T>().#data
-        } else throw new TypeError('list')
+            if (targetListData.length + rangeLength > List.maxLength)
+                throw new RangeError(`list.length() (${targetListData.length}) would be greater than List.maxLength (16777216)`)
+
+            if (target === undefined)
+                throw new TypeError('target argument is undefined')
+
+            target = Number(target)
+
+            if (!Number.isInteger(target))
+                throw new RangeError(`target argument (${target}) is not an integer`)
+            else if (target < 0)
+                throw new RangeError(`target argument (${target}) is less than 0`)
+            else if (currentListData === targetListData) {
+                if (target > targetListData.length - rangeLength)
+                    throw new RangeError(`target argument (${target}) would be greater than this.length() (${targetListData.length - rangeLength}) after removing the specified nodes`)
+            } else {
+                if (target > targetListData.length)
+                    throw new RangeError(`target argument (${target}) is greater than list.length()`)
+            }
+        } else {
+            list = new List
+            targetListData = list.#data
+        }
 
         let targetNodeData: ListNodeData<T> = null as any
 
-        // make start the lower index
+        // start = Math.min(start, end)
+        // end = Math.max(start, end)
         if (end < start) {
             const _end = end
 
@@ -933,7 +1088,7 @@ export class List<T> implements Iterable<ListNode<T>> {
             if (i >= start && i <= end) {
                 currentNodeData.listData = targetListData
 
-                // remove start
+                // start
                 if (i === start) {
                     startNodeData = currentNodeData
 
@@ -944,7 +1099,7 @@ export class List<T> implements Iterable<ListNode<T>> {
                     currentNodeData.previous = null
                 }
 
-                // remove end
+                // end
                 if (i === end) {
                     endNodeData = currentNodeData
 
@@ -989,47 +1144,47 @@ export class List<T> implements Iterable<ListNode<T>> {
             targetListData.length += rangeLength
 
             return targetListData.list
-        }
-        // unshift; target list length >= 1
-        else if (index === 0) {
+        } // first node; target list length >= 1
+        else if (target === 0) {
             targetNodeData = targetListData.first as ListNodeData<T>
-        // last node; target list length >= 2
-        } else if (index >= targetListData.length - 1) {
-            // prepend
+        } // last node; target list length >= 2
+        else if (target >= targetListData.length - 1) {
             targetNodeData = targetListData.last as ListNodeData<T>
 
-            // append
-            if (index === targetListData.length) append = true
-        // get target node; target list length >= 3
-        } else {
-            // get node from target if its a list
+            if (target === targetListData.length) append = true
+        } // get target node; target list length >= 3; O (n / 2)
+        else {
+            // get node from target
             if (!targetNodeData) {
-                // only search half the list
-                if (index < (targetListData.length) / 2) {
-                    forwards = true
-
+                // forwards
+                if (target < (targetListData.length) / 2) {
                     // skip first node
                     currentNodeData = (targetListData.first as ListNodeData<T>).next
                     i = 1
-                } else {
-                    forwards = false
 
+                    while (currentNodeData) {
+                        if (i === target) {
+                            targetNodeData = currentNodeData
+    
+                            break
+                        }
+    
+                        currentNodeData = currentNodeData.next
+                        i++
+                    }
+                } // backwards
+                else {
                     // skip last node
                     currentNodeData = (targetListData.last as ListNodeData<T>).previous
                     i = targetListData.length - 2
-                }
 
-                while (currentNodeData) {
-                    if (i === index) {
-                        targetNodeData = currentNodeData
-
-                        break
-                    }
-
-                    if (forwards) {
-                        currentNodeData = currentNodeData.next
-                        i++
-                    } else {
+                    while (currentNodeData) {
+                        if (i === target) {
+                            targetNodeData = currentNodeData
+    
+                            break
+                        }
+    
                         currentNodeData = currentNodeData.previous
                         i--
                     }
@@ -1067,14 +1222,16 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     fill (value: T) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        const currentListData = this.#data
+        const listData = this.#data
         
-        if (currentListData.length === 0)
+        if (listData.length === 0)
             return this
 
-        let nodeData: ListNodeData<T> | null = currentListData.first
+        let nodeData: ListNodeData<T> | null = listData.first
         
         while (nodeData) {
             nodeData.node.value = value
@@ -1090,27 +1247,29 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     reverse () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
-
-        const currentListData = this.#data
-
-        if (currentListData.length === 0) return this
-
-        let currentNodeData = currentListData.first
-
-        while (currentNodeData) {
-            const { previous, next } = currentNodeData
-
-            currentNodeData.previous = next
-            currentNodeData.next = previous
-
-            currentNodeData = next
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
         }
 
-        const { first, last } = currentListData
+        const listData = this.#data
 
-        currentListData.first = last
-        currentListData.last = first
+        if (listData.length === 0) return this
+
+        let nodeData = listData.first
+
+        while (nodeData) {
+            const { previous, next } = nodeData
+
+            nodeData.previous = next
+            nodeData.next = previous
+
+            nodeData = next
+        }
+
+        const { first, last } = listData
+
+        listData.first = last
+        listData.last = first
 
         return this
     }
@@ -1118,36 +1277,38 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Copy the values of a range of nodes within this list to another range of nodes within this list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
-     * Therefore start or end can be the higher target, (List instance).copyWithin(start, end, ...) and (List instance).copyWithin(end, start, ...) are the same operation.
-     * @param targetEnd determines whether target is the start of the range of nodes whose values will be changed if false,
-     * or is the end of the range if true
+     * Therefore start or end can be the higher index, (List instance).copyWithin(start, end, ...) and (List instance).copyWithin(end, start, ...) are the same operation.
+     * @param start The position that along with end determines the range of nodes whose values will be copied.
+     * @param end The position that along with start determines the range of nodes whose values will be copied.
+     * @param target The position of the range of nodes whose values will be mutated.
+     * @param targetEnd determines whether target is the start of the range of nodes if false
+     * or is the end of the range if true.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if start or end is not an integer
-     * @throws { RangeError } if start or end is less than 0 or greater than or equal to this length
-     * @throws { TypeError } if target is not an integer
-     * @throws { RangeError } if target is less than 0 or greater than or equal to this length
-     * @throws { TypeError } if targetEnd is not a boolean
+     * @throws { TypeError } if start, end or target is not an integer greater than -1 and less than this.length()
      */
     copyWithin (start: number, end: number, target: number, targetEnd = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
-
-        if (typeof start !== 'number') throw new TypeError('start')
-        else if (!Number.isInteger(start)) throw new RangeError('start')
-        else if (typeof end !== 'number') throw new TypeError('end')
-        else if (!Number.isInteger(end)) throw new RangeError('end')
-        else if (typeof target !== 'number') throw new TypeError('target')
-        else if (!Number.isInteger(target)) throw new RangeError('target')
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
 
-        if (start < 0 || start > currentListData.length - 1) throw new RangeError('start')
-        else if (end < 0 || end > currentListData.length - 1) throw new RangeError('end')
-        else if (target < 0 || target > currentListData.length - 1) throw new RangeError('target')
+        start = Number(start)
 
-        if (typeof targetEnd !== 'boolean')
-            throw new TypeError('targetEnd')
+        if (!Number.isInteger(start) || start < 0 || start > currentListData.length - 1)
+            throw new RangeError(`start argument (${start}) is not a integer greater than -1 or less than this.length() (${currentListData.length})`)
 
-        // make start the lower target
+        end = Number(end)
+
+        if (!Number.isInteger(end) || end < 0 || end > currentListData.length - 1)
+            throw new RangeError(`end argument (${end}) is not a integer greater than -1 or less than this.length() (${currentListData.length})`)
+
+        target = Number(target)
+
+        if (!Number.isInteger(target) || target < 0 || target > currentListData.length - 1)
+            throw new RangeError(`target argument (${target}) is not a integer greater than -1 or less than this.length() (${currentListData.length})`)
+
+        // start = Math.min(start, end); end = Math.max(start, end)
         if (end < start) {
             const _end = end
 
@@ -1155,141 +1316,151 @@ export class List<T> implements Iterable<ListNode<T>> {
             start = _end
         }
 
-        // direction to iterate is based on whether the range of start to end is closer to the first or last node
-        let forwards = start > currentListData.length - end - 1 ? false : true
-        let startNodeData: ListNodeData<T> = null as any
-        let endNodeData: ListNodeData<T> = null as any
-        let currentNodeData: ListNodeData<T>| null = null
-        let i: number
+        targetEnd = !!targetEnd
 
-        if (forwards) {
-            currentNodeData = currentListData.first as ListNodeData<T>
-            i = 0
-        } else {
-            currentNodeData = currentListData.last as ListNodeData<T>
-            i = currentListData.length - 1
-        }
-
-        // whichever comes first start or end, forwards or backwards start at that node then stop at end or start
-        while (currentNodeData) {
-            if (i >= start && i <= end) {
-                if (i === start) {
-                    startNodeData = currentNodeData
-                }
-
-                if (i === end) {
-                    endNodeData = currentNodeData
-                }
-            }
-
-            if (startNodeData && endNodeData) break
-
-            if (forwards) {
-                currentNodeData = currentNodeData.next
-                i++
-            } else {
-                currentNodeData = currentNodeData.previous
-                i--
-            }
-        }
+        // skip
+        if (start === target && targetEnd === false) return this
+        else if (end === target && targetEnd === true) return this
 
         // get target node
-        let targetNodeData: ListNodeData<T> | null
+        let currentNodeData: ListNodeData<T>
+        let targetNodeData: ListNodeData<T>
+        let i: number
 
-        // unshift; target list length >= 1
+        // first node; target list length >= 1
         if (target === 0)
             targetNodeData = currentListData.first as ListNodeData<T>
         // last node; target list length >= 2
         else if (target === currentListData.length - 1) 
             targetNodeData = currentListData.last as ListNodeData<T>
-        // get target node; target list length >= 3
+        // get target node; target list length >= 3; O (n / 2)
         else {
             if (target < (currentListData.length) / 2) {
-                forwards = true
-
                 // skip first node
                 currentNodeData = (currentListData.first as ListNodeData<T>).next
                 i = 1
-            } else {
-                forwards = false
 
+                while (currentNodeData) {
+                    if (i === target) {
+                        targetNodeData = currentNodeData
+
+                        break
+                    }
+
+                    currentNodeData = currentNodeData.next
+                    i++
+                }
+            } else {
                 // skip last node
                 currentNodeData = (currentListData.last as ListNodeData<T>).previous
                 i = currentListData.length - 2
-            }
 
-            while (currentNodeData) {
-                if (i === target) {
-                    targetNodeData = currentNodeData
+                while (currentNodeData) {
+                    if (i === target) {
+                        targetNodeData = currentNodeData
 
-                    break
-                }
+                        break
+                    }
 
-                if (forwards) {
-                    currentNodeData = currentNodeData.next
-                    i++
-                } else {
                     currentNodeData = currentNodeData.previous
                     i--
                 }
             }
         }
 
-        // copy
-        if (targetEnd)
-            currentNodeData = endNodeData
-        else
-            currentNodeData = startNodeData
+        // copy start to end values to array; otherwise if target is within start to end then values will be erroneously duplicated; O (n / 2)
+        const values = []
+        const range = end - start + 1
 
-        let currentValue = currentNodeData.node.value
-        let _currentValue
+        // forward
+        if (start < currentListData.length - end - 1) {
+            currentNodeData = currentListData.first as ListNodeData<T>
+            i = 0
 
-        while (targetNodeData) {
-            if (targetEnd) {
-                _currentValue = currentNodeData.previous?.node.value
-                targetNodeData.node.value = currentValue
-                currentValue = _currentValue
+            while (currentNodeData) {
+                if (i >= start && i <= end) {
+                    values.push(currentNodeData.node.value)
 
-                if (currentNodeData === startNodeData) break
-
-                currentNodeData = currentNodeData.previous
-                targetNodeData = targetNodeData.previous
-                
-            } else {
-                _currentValue = currentNodeData.next?.node.value
-                targetNodeData.node.value = currentValue
-                currentValue = _currentValue
-
-                if (currentNodeData === endNodeData) break
+                    if (values.length === range) break
+                }
 
                 currentNodeData = currentNodeData.next
-                targetNodeData = targetNodeData.next
+                i++
             }
+        // backwards
+        } else {
+            currentNodeData = currentListData.last as ListNodeData<T>
+            i = currentListData.length - 1
+
+            while (currentNodeData) {
+                if (i >= start && i <= end) {
+                    values.unshift(currentNodeData.node.value)
+
+                    if (values.length === range) break
+                }
+
+                currentNodeData = currentNodeData.previous
+                i--
+            }
+        }
+
+        // copy
+        if (targetEnd === true)
+            i = values.length - 1
+        else
+            i = 0
+
+        while (targetNodeData) {
+            targetNodeData.node.value = values[i]
+
+            if (targetEnd) {
+                targetNodeData = targetNodeData.previous
+                i--
+            } else {
+                targetNodeData = targetNodeData.next
+                i++
+            }
+
+            if (i < 0 || i > values.length - 1) break
         }
 
         return this
     }
 
     /**
+     * Sort the values of this list where the order is determined by the callback.
+     * @param callback A function that determines the order of the nodes.
+     * The function is called with the following arguments:
+     *
+     * a: The first node for comparison. Will never be undefined.
+     *
+     * b: The first node for comparison. Will never be undefined.
+     *
+     * It should return a number where: A negative value indicates that a should come before b.
+     * A positive value indicates that a should come after b.
+     * Zero or NaN indicates that a and b are considered equal.
+     * [Array.prototype.sort](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#comparefn)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
      */
-    sort (callback: (a: T, b: T) => number) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+    sort (callback: (a: ListNode<T>, b: ListNode<T>) => number) {
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
+        if (typeof callback !== 'function') throw new TypeError(`callback (${typeof callback} is not a function)`)
 
-        const values = []
+        const nodes: ListNode<T>[] = []
         let nodeData: ListNodeData<T> | null = this.#data.first
         let i = 0
 
         while (nodeData) {
-            values[i] = nodeData.node.value
+            nodes[i] = nodeData.node
             nodeData = nodeData.next
             i++
         }
 
-        values.sort(callback)
+        const values = nodes.sort(callback).map(({ value }) => value)
 
         nodeData = this.#data.first
         i = 0
@@ -1304,27 +1475,104 @@ export class List<T> implements Iterable<ListNode<T>> {
     }
 
     /**
+     * Concatenate all nested lists into this recursively up to the specified depth.
+     * @param depth The maximum recursion depth. (default 1)
+     * @throws { TypeError } if this is not a List instance
+     * @throws { RangeError } if depth is not an integer greater than 0
+     * @throws { RangeError } if this.length() would exceed List.maxLength (16777216)
+     */
+    flat (depth = 1) {
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
+
+        depth = Number(depth)
+
+        if (!Number.isInteger(depth) || depth < 1)
+            throw new RangeError(`depth argument (${depth}) is not an integer greater than 0`)
+
+        let i = 0
+        const stack = []
+
+        stack.unshift({ nodeData: this.#data.first })
+
+        callStack: while (stack.length > 0) {
+            const data = stack[0] as { nodeData: ListNodeData<T> }
+            let { nodeData } = data
+
+            while (nodeData) {
+                data.nodeData = nodeData.next
+
+                if (nodeData.node.value instanceof List && stack.length <= depth) {
+                    stack.unshift({ nodeData: nodeData.node.value.#data.first })
+
+                    continue callStack
+                } else {
+                    if (++i > List.maxLength) throw new RangeError(`this.length() (${i}) would exceed List.maxLength (16777216)`)
+                }
+    
+                nodeData = data.nodeData
+            }
+
+            stack.shift()
+        }
+
+        i = 0
+
+        stack.unshift({ nodeData: this.#data.first })
+
+        callStack: while (stack.length > 0) {
+            let { nodeData } = stack[0] as { nodeData: ListNodeData<T> }
+
+            while (nodeData) {
+                if (nodeData.node.value instanceof List && stack.length <= depth) {
+                    stack.unshift({ nodeData: nodeData.node.value.#data.first })
+
+                    continue callStack
+                } else if (stack.length > 1) {
+                    if (stack[stack.length - 1].nodeData.node.value instanceof List) {
+                        stack[stack.length - 1].nodeData.node.value = nodeData.node.value
+                    } else {
+                        new ListNode(nodeData.node.value, stack[stack.length - 1].nodeData.node, true)
+                        stack[stack.length - 1].nodeData = stack[stack.length - 1].nodeData.next
+                    }
+                }
+
+                nodeData = stack[0].nodeData = nodeData.next
+            }
+
+            stack.shift()
+            if (stack.length > 0) stack[0].nodeData = stack[0].nodeData.next
+            // stack[stack.length - 1].nodeData = stack[stack.length - 1].nodeData.next
+        }
+
+        return this
+    }
+
+    /**
      * Return a copy of a portion of this list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
      * Therefore start or end can be the higher index, (List instance).slice(start, end) and (List instance).slice(end, start) are the same operation.
      * @param start default 0
      * @param end default this.length() - 1
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if start or end is not a number
-     * @throws { RangeError } if start or end is not a integer greater than -1 or less than list length
+     * @throws { RangeError } if start or end is not a integer greater than -1 and less than this.length()
      */
     slice (start = 0, end = this.#data.length - 1) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
-
-        if (typeof start !== 'number') throw new TypeError('start')
-        else if (!Number.isInteger(start)) throw new RangeError('start')
-        else if (typeof end !== 'number') throw new TypeError('end')
-        else if (!Number.isInteger(end)) throw new RangeError('end')
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
+        start = Number(start)
 
-        if (start < 0 || start > currentListData.length - 1) throw new RangeError('start')
-        else if (end < 0 || end > currentListData.length - 1) throw new RangeError('end')
+        if (!Number.isInteger(start) || start < 0 || start > currentListData.length - 1)
+            throw new RangeError(`start argument (${start}) is not a integer greater than -1 or less than this.length() (${currentListData.length})`)
+
+        end = Number(end)
+
+        if (!Number.isInteger(end) || end < 0 || end > currentListData.length - 1)
+            throw new RangeError(`end argument (${end}) is not a integer greater than -1 or less than this.length() (${currentListData.length})`)
 
         // make start the lower index
         if (end < start) {
@@ -1335,31 +1583,30 @@ export class List<T> implements Iterable<ListNode<T>> {
         }
 
         // direction to iterate is based on whether the range of start to end is closer to the first or last node
-        let forwards = start > currentListData.length - end - 1 ? false : true
         let currentNodeData: ListNodeData<T>| null = null
         let i: number
 
-        if (forwards) {
-            currentNodeData = currentListData.first as ListNodeData<T>
+        let targetNode: ListNode<T>
+
+        if (start < currentListData.length - end - 1) {
+            currentNodeData = currentListData.first
             i = 0
-        } else {
-            currentNodeData = currentListData.last as ListNodeData<T>
-            i = currentListData.length - 1
-        }
 
-        const newList = new List<T>
-
-        while (currentNodeData) {
-            if (forwards) {
+            while (currentNodeData) {
                 if (i >= start && i <= end) {
-                    new ListNode(currentNodeData.node.value, newList, newList.#data.length)
+                    targetNode = new ListNode(currentNodeData.node.value, targetNode, true)
                 }
 
                 currentNodeData = currentNodeData.next
                 i++
-            } else {
+            }
+        } else {
+            currentNodeData = currentListData.last
+            i = currentListData.length - 1
+
+            while (currentNodeData) {
                 if (i >= start && i <= end) {
-                    new ListNode(currentNodeData.node.value, newList, 0)
+                    targetNode = new ListNode(currentNodeData.node.value, targetNode)
                 }
 
                 currentNodeData = currentNodeData.previous
@@ -1367,44 +1614,48 @@ export class List<T> implements Iterable<ListNode<T>> {
             }
         }
 
-        return newList
+        if (!targetNode.list()) targetNode.insertInto(new List)
+
+        return targetNode.list()
     }
 
     /**
      * Return true if the value is contained in this list or false if not.
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param value The value to search for.
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if backwards is not a boolean
      */
     includes (value: T, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
 
+        // empty
         if (currentListData.length === 0)
             return false
 
         let nodeData: ListNodeData<T> | null = null
         let i: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             i = currentListData.length - 1
+
+            while (nodeData) {
+                if (nodeData.node.value === value) return true
+
+                nodeData = nodeData.previous
+                i--
+            }
         } else {
             nodeData = currentListData.first
             i = 0
-        }
 
-        while (nodeData) {
-            if (nodeData.node.value === value)
-                return true
+            while (nodeData) {
+                if (nodeData.node.value === value) return true
 
-            if (backwards) {
-                nodeData = nodeData.previous
-                i--
-            } else {
                 nodeData = nodeData.next
                 i++
             }
@@ -1415,14 +1666,13 @@ export class List<T> implements Iterable<ListNode<T>> {
 
     /**
      * Return the index of the first node encountered upon iterating this list that contains the given value or -1 if the value is not in the list.
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if backwards is not a boolean
      */
     indexOf (value: T, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
 
@@ -1432,7 +1682,7 @@ export class List<T> implements Iterable<ListNode<T>> {
         let nodeData: ListNodeData<T> | null = null
         let i: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             i = currentListData.length - 1
         } else {
@@ -1459,18 +1709,27 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Iterate this list and calls the given callback once for each node.
      * Break iteration and return the first node encountered where the callback returns true.
-     * @param self used as this when executing the callback
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param callback A function to execute for each node in the list.
+     * It should return a truthy value to indicate a matching node has been found, and a falsy value otherwise.
+     * The function is called with the following arguments:
+     * 
+     * node: The current node being processed in the list.
+     * 
+     * index: The index of the current node being processed in the list.
+     * 
+     * list: The list find() was called upon.
+     * [Array.prototype.find](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find#callbackfn)
+     * @param self The value to use as this when executing the callback. (default null)
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
-     * @throws { TypeError } if backwards is not a boolean
      */
     find (callback: (node: ListNode<T>, index: number, list: List<T>) => void, self = null, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        if (typeof callback !== 'function') throw new TypeError(`callback argument (${typeof callback}) is not a function`)
 
         const currentListData = this.#data
 
@@ -1480,21 +1739,23 @@ export class List<T> implements Iterable<ListNode<T>> {
         let nodeData: ListNodeData<T> | null = null
         let index: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             index = currentListData.length - 1
+
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) === true) return nodeData.node
+    
+                nodeData = nodeData.previous
+                index--
+            }
         } else {
             nodeData = currentListData.first
             index = 0
-        }
 
-        while (nodeData) {
-            if (callback.call(self, nodeData.node, index, this) === true) return nodeData.node
-
-            if (backwards) {
-                nodeData = nodeData.previous
-                index--
-            } else {
+            while (nodeData) {
+                if (callback.call(self, nodeData.node, index, this) === true) return nodeData.node
+    
                 nodeData = nodeData.next
                 index++
             }
@@ -1506,18 +1767,26 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Iterate this list and calls the given callback once for each node.
      * Break iteration and return the index of the first node encountered where the callback returns true.
-     * @param self used as this when executing the callback
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param callback A function to execute for each node in the list.
+     * It should return a truthy value to indicate a matching node has been found, and a falsy value otherwise.
+     * The function is called with the following arguments:
+     * 
+     * node: The current node being processed in the list.
+     * 
+     * index: The index of the current node being processed in the list.
+     * 
+     * list: The list findIndex() was called upon. [Array.prototype.findIndex](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex#callbackfn)
+     * @param self The value to use as this when executing the callback. (default null)
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
-     * @throws { TypeError } if backwards is not a boolean
      */
     findIndex (callback: (node: ListNode<T>, index: number, list: List<T>) => void, self = null, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        if (typeof callback !== 'function') throw new TypeError(`callback argument (${typeof callback}) is not a function`)
 
         const currentListData = this.#data
 
@@ -1527,22 +1796,25 @@ export class List<T> implements Iterable<ListNode<T>> {
         let nodeData: ListNodeData<T> | null = null
         let index: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             index = currentListData.length - 1
+
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) === true)
+                    return index
+
+                nodeData = nodeData.previous
+                index--
+            }
         } else {
             nodeData = currentListData.first
             index = 0
-        }
 
-        while (nodeData) {
-            if (callback.call(self, nodeData.node, index, this) === true)
-                return index
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) === true)
+                    return index
 
-            if (backwards) {
-                nodeData = nodeData.previous
-                index--
-            } else {
                 nodeData = nodeData.next
                 index++
             }
@@ -1554,18 +1826,26 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Iterate this list and calls the given callback once for each node.
      * Break iteration and return true when the callback returns true or return false.
-     * @param self used as this when executing the callback
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param callback A function to execute for each node in the list.
+     * It should return a truthy value to indicate the node passes the test, and a falsy value otherwise.
+     * The function is called with the following arguments:
+     *
+     * node: The current node being processed in the list.
+     *
+     * index: The index of the current node being processed in the list.
+     *
+     * list: The list some() was called upon. [Array.prototype.some](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some#callbackfn)
+     * @param self The value to use as this when executing the callback. (default null)
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
-     * @throws { TypeError } if backwards is not a boolean
      */
     some (callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self = null, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        if (typeof callback !== 'function') throw new TypeError(`callback argument (${typeof callback}) is not a function`)
 
         const currentListData = this.#data
         
@@ -1575,22 +1855,25 @@ export class List<T> implements Iterable<ListNode<T>> {
         let nodeData: ListNodeData<T> | null = null
         let index: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             index = currentListData.length - 1
+
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) === true)
+                    return true
+
+                nodeData = nodeData.previous
+                index--
+            }
         } else {
             nodeData = currentListData.first
             index = 0
-        }
 
-        while (nodeData) {
-            if (callback.call(self, nodeData.node, index, this) === true)
-                return true
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) === true)
+                    return true
 
-            if (backwards) {
-                nodeData = nodeData.previous
-                index--
-            } else {
                 nodeData = nodeData.next
                 index++
             }
@@ -1602,18 +1885,26 @@ export class List<T> implements Iterable<ListNode<T>> {
     /**
      * Iterate this list and calls the given callback once for each node.
      * Break iteration and return false when the callback does not return true or return true.
-     * @param self used as this when executing the callback
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param callback A function to execute for each node in the list.
+     * It should return a truthy value to indicate the node passes the test, and a falsy value otherwise.
+     * The function is called with the following arguments:
+     *
+     * node: The current node being processed in the list.
+     *
+     * index: The index of the current node being processed in the list.
+     *
+     * list: The list every() was called upon. [Array.prototype.every](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every#callbackfn)
+     * @param self The value to use as this when executing the callback. (default null)
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
-     * @throws { TypeError } if backwards is not a boolean
      */
     every (callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self = null, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        if (typeof callback !== 'function') throw new TypeError(`callback argument (${typeof callback}) is not a function`)
 
         const currentListData = this.#data
         
@@ -1623,21 +1914,23 @@ export class List<T> implements Iterable<ListNode<T>> {
         let nodeData: ListNodeData<T> | null = null
         let index: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             index = currentListData.length - 1
+
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) !== true) return false
+
+                nodeData = nodeData.previous
+                index--
+            }
         } else {
             nodeData = currentListData.first
             index = 0
-        }
 
-        while (nodeData) {
-            if (callback.call(self, nodeData.node, index, this) !== true) return false
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) !== true) return false
 
-            if (backwards) {
-                nodeData = nodeData.previous
-                index--
-            } else {
                 nodeData = nodeData.next
                 index++
             }
@@ -1650,19 +1943,30 @@ export class List<T> implements Iterable<ListNode<T>> {
      * Iterate this list and calls the given callback once for each node
      * using the return value of the previous call as the accumulator argument for the next call.
      * Return accumulator after the iteration is finished.
-     * @param initialValue used as the value of accumulator for the initial call to the callback
-     * @param self used as this when executing the callback
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param callback A function to execute for each node in the list.
+     * Its return value becomes the value of the accumulator parameter on the next invocation of callbackFn.
+     * For the last invocation, the return value becomes the return value of reduce().
+     * The function is called with the following arguments:
+     * 
+     * accumulator: The value resulting from the previous call to callbackFn. On the first call, its value is initialValue.
+     *
+     * node: The current node.
+     *
+     * index: The position of node in the list.
+     *
+     * list: The list reduce() was called upon. [Array.prototype.reduce](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce#callbackfn)
+     * @param initialValue The value of accumulator for the initial call to the callback.
+     * @param self The value to use as this when executing the callback. (default null)
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
-     * @throws { TypeError } if backwards is not a boolean
      */
     reduce<U> (callback: (accumulator: U, node: ListNode<T>, index: number, list: List<T>) => U, initialValue: U, self = null, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        if (typeof callback !== 'function') throw new TypeError(`callback argument (${typeof callback}) is not a function`)
 
         const currentListData = this.#data
         
@@ -1672,21 +1976,21 @@ export class List<T> implements Iterable<ListNode<T>> {
         let nodeData: ListNodeData<T> | null = null
         let index: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             index = currentListData.length - 1
-        } else {
-            nodeData = currentListData.first
-            index = 0
-        }
 
-        while (nodeData) {
-            if (backwards) {
+            while (nodeData) {
                 initialValue = callback.call(self, initialValue, nodeData.node, index, this)
 
                 nodeData = nodeData.previous
                 index--
-            } else {
+            }
+        } else {
+            nodeData = currentListData.first
+            index = 0
+
+            while (nodeData) {
                 initialValue = callback.call(self, initialValue, nodeData.node, index, this)
 
                 nodeData = nodeData.next
@@ -1699,46 +2003,53 @@ export class List<T> implements Iterable<ListNode<T>> {
 
     /**
      * Iterate this list and call the given callback once for each node and remove the nodes where the callback returned true.
-     * @param self used as this when executing the callback
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param callback A function to execute for each node in the list.
+     * It should return a truthy value to keep the node in the resulting list, and a falsy value otherwise.
+     * The function is called with the following arguments:
+     *
+     * node: The current node being processed in the list.
+     *
+     * index: The index of the current node being processed in the list.
+     *
+     * list: The list filter() was called upon. [Array.prototype.filter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter#callbackfn)
+     * @param self The value to use as this when executing the callback. (default null)
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
-     * @throws { TypeError } if backwards is not a boolean
      */
     filter (callback: (node: ListNode<T>, index: number, list: List<T>) => boolean, self = null, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        if (typeof callback !== 'function') throw new TypeError(`callback argument (${typeof callback}) is not a function`)
 
         const currentListData = this.#data
         
         if (currentListData.length === 0)
             return this
 
+        const nodeDataArray = []
         let nodeData: ListNodeData<T> | null = null
         let index: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             index = currentListData.length - 1
+            
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) === true) nodeDataArray.push(nodeData)
+                
+                nodeData = nodeData.previous
+                index--
+            }
         } else {
             nodeData = currentListData.first
             index = 0
-        }
 
-        const nodeDataArray = []
-
-        while (nodeData) {
-            let adjacent = backwards ? nodeData.previous : nodeData.next
-
-            if (callback.call(self, nodeData.node, index, this) === true) nodeDataArray.push(nodeData)
-            
-            if (backwards) {
-                nodeData = nodeData.previous
-                index--
-            } else {
+            while (nodeData) {
+                if (!!callback.call(self, nodeData.node, index, this) === true) nodeDataArray.push(nodeData)
+                
                 nodeData = nodeData.next
                 index++
             }
@@ -1766,45 +2077,52 @@ export class List<T> implements Iterable<ListNode<T>> {
 
     /**
      * Iterate this list and call the given callback once for each node and set its value to the returned value.
-     * @param self used as this when executing the callback
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param callback A function to execute for each node in the list.
+     * Its return value is added as a single node in the new list. The function is called with the following arguments:
+     *
+     * node: The current node being processed in the list.
+     *
+     * index: The index of the current node being processed in the list.
+     *
+     * list: The list map() was called upon. [Array.prototype.map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map#callbackfn)
+     * @param self The value to use as this when executing the callback. (default null)
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
-     * @throws { TypeError } if backwards is not a boolean
      */
     map <U>(callback: (node: ListNode<T>, index: number, list: List<T>) => U, self = null, backwards = false) {
-                if (typeof callback !== 'function') throw new TypeError('callback')
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        if (typeof callback !== 'function') throw new TypeError(`callback argument (${typeof callback}) is not a function`)
 
         const currentListData = this.#data
         
         if (currentListData.length === 0)
             return this
 
+        const values = []
         let nodeData: ListNodeData<T> | null = null
         let index: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             index = currentListData.length - 1
+
+            while (nodeData) {
+                values.push(callback.call(self, nodeData.node, index, this))
+
+                nodeData = nodeData.previous
+                index--
+            }
         } else {
             nodeData = currentListData.first
             index = 0
-        }
 
-        const values = []
+            while (nodeData) {
+                values.push(callback.call(self, nodeData.node, index, this))
 
-        while (nodeData) {
-            values.push(callback.call(self, nodeData.node, index, this))
-
-            if (backwards) {
-                nodeData = nodeData.previous
-                index--
-            } else {
                 nodeData = nodeData.next
                 index++
             }
@@ -1824,18 +2142,25 @@ export class List<T> implements Iterable<ListNode<T>> {
 
     /**
      * Iterate this list and calls the given callback once for each node.
-     * @param self used as this when executing the callback
-     * @param backwards iterate from first to last if false (default) or from last to first if true
+     * @param callback A function to execute for each node in the list. Its return value is discarded.
+     * The function is called with the following arguments:
+     *
+     * node: The current node being processed in the list.
+     *
+     * index: The index of the current node being processed in the list.
+     *
+     * list: The list forEach() was called upon.
+     * @param self The value to use as this when executing the callback. (default null)
+     * @param backwards Iterate from first to last if falsy or from last to first if truthy. (default false)
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if callback is not a function
-     * @throws { TypeError } if backwards is not a boolean
      */
     forEach (callback: (node: ListNode<T>, index: number, list: List<T>) => void, self = null, backwards = false) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
-        if (typeof callback !== 'function') throw new TypeError('callback')
-
-        if (typeof backwards !== 'boolean') throw new TypeError('backwards')
+        if (typeof callback !== 'function') throw new TypeError(`callback argument (${typeof callback}) is not a function`)
 
         const currentListData = this.#data
         
@@ -1845,7 +2170,7 @@ export class List<T> implements Iterable<ListNode<T>> {
         let nodeData: ListNodeData<T> | null = null
         let index: number
 
-        if (backwards) {
+        if (!!backwards === true) {
             nodeData = currentListData.last
             index = currentListData.length - 1
         } else {
@@ -1872,49 +2197,76 @@ export class List<T> implements Iterable<ListNode<T>> {
      * Return a new List that is populated by the contents of this list along with the given values.
      * or their contents if the value is a List.
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if the new list length would be greater than 2 ** 24 - 1
+     * @throws { RangeError } if the new list length would exceed List.maxLength (16777216)
      */
     concat (...values: (T | List<T>)[]) {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
         
         let length = this.#data.length
 
-        if (length + values.length > List.maxLength) throw new RangeError('length')
+        if (length + values.length === 0) return new List<T>
+        else if (length + values.length > List.maxLength)
+            throw new RangeError(`the new list length (${length + values.length}) would exceed List.maxLength (16777216)`)
 
         for (const value of values) {
             if (value instanceof List) {
                 length += value.#data.length
             } else
                 length++
-
-            if (length > List.maxLength) throw new RangeError('length')
         }
 
-        const newList = new List<T>
+        if (length > List.maxLength) throw new RangeError(`the new list length (${length}) would exceed List.maxLength (16777216)`)
 
-        let nodeData = this.#data.first
+        let targetNode: ListNode<T>
+        let nodeData: ListNodeData<T> | null = null
+        let value = values[0]
+        let i = 0
 
-        while (nodeData) {
-            new ListNode(nodeData.node.value, newList, newList.#data.length)
+        if (this.#data.length > 0) {
+            targetNode = new ListNode(this.#data.first.node.value)
+            nodeData = this.#data.first.next
 
-            nodeData = nodeData.next
-        }
+            while (nodeData) {
+                targetNode = new ListNode(nodeData.node.value, targetNode, true)
+    
+                nodeData = nodeData.next
+            }
+        } else {
+            i++
 
-        for (const value of values) {
-            if (value instanceof List) {
+            if (value instanceof List && value.#data.length > 0) {
                 nodeData = value.#data.first
-                
+                targetNode = new ListNode(nodeData.node.value)
+
+                nodeData = nodeData.next
 
                 while (nodeData) {
-                    new ListNode(nodeData.node.value, newList, newList.#data.length)
+                    targetNode = new ListNode(nodeData.node.value, targetNode, true)
 
                     nodeData = nodeData.next
                 }
             } else
-                new ListNode(value, newList, newList.#data.length)
+                targetNode = new ListNode(value as T)
         }
 
-        return newList
+        for (i; i < values.length; i++) {
+            value = values[i]
+
+            if (value instanceof List) {
+                nodeData = value.#data.first
+
+                while (nodeData) {
+                    targetNode = new ListNode(nodeData.node.value, targetNode, true)
+
+                    nodeData = nodeData.next
+                }
+            } else
+                targetNode = new ListNode(value, targetNode, true)
+        }
+
+        return targetNode.list()
     }
 
     /**
@@ -1922,7 +2274,9 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     nodes () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
 
@@ -1948,7 +2302,9 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     values () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
 
@@ -1974,7 +2330,9 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     toString () {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
         let listString = ''
@@ -1982,13 +2340,17 @@ export class List<T> implements Iterable<ListNode<T>> {
         if (currentListData.length === 0)
             return listString
 
-        listString += `${(currentListData.first as ListNodeData<T>).node.value}`
+        let value = currentListData.first.node.value
 
-        let nodeData = (currentListData.first as ListNodeData<T>).next
+        listString += typeof value === 'object' ? Object.prototype.toString.call(value) : value
+
+        let nodeData = currentListData.first.next
         let index = 1
 
         while (nodeData) {
-            listString += `,${nodeData.node.value}`
+            value = nodeData.node.value
+
+            listString += ',' + (typeof value === 'object' ? Object.prototype.toString.call(value) : value)
 
             nodeData = nodeData.next
             index++
@@ -2002,7 +2364,9 @@ export class List<T> implements Iterable<ListNode<T>> {
      * @throws { TypeError } if this is not a List instance
      */
     [Symbol.iterator] (): ArrayIterator<ListNode<T>> {
-        try { this.#data } catch (error) { throw new TypeError(thisIsNotAList) }
+        try { this.#data } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
 
         const currentListData = this.#data
 
@@ -2025,9 +2389,47 @@ export class List<T> implements Iterable<ListNode<T>> {
     }
 }
 
+Object.defineProperty(ListNode, Symbol.hasInstance, {
+    configurable: false,
+    writable: false,
+    enumerable: false,
+    value: ListNode[Symbol.hasInstance]
+})
+
 Object.defineProperty(List, 'maxLength', {
     configurable: false,
     writable: false,
     enumerable: true,
     value: List.maxLength
+})
+
+Object.defineProperty(List, Symbol.hasInstance, {
+    configurable: false,
+    writable: false,
+    enumerable: false,
+    value: List[Symbol.hasInstance]
+});
+
+let propertyNames = Object.getOwnPropertyNames(ListNode.prototype) as (string | symbol)[]
+propertyNames.push(...Object.getOwnPropertySymbols(ListNode.prototype))
+
+propertyNames.forEach(name => {
+    Object.defineProperty(ListNode.prototype, name, {
+        configurable: false,
+        writable: false,
+        enumerable: typeof name === 'string' ? true : false,
+        value: ListNode.prototype[name]
+    })
+})
+
+propertyNames = Object.getOwnPropertyNames(List.prototype) as (string | symbol)[]
+propertyNames.push(...Object.getOwnPropertySymbols(List.prototype))
+
+propertyNames.forEach(name => {
+    Object.defineProperty(List.prototype, name, {
+        configurable: false,
+        writable: false,
+        enumerable: typeof name === 'string' ? true : false,
+        value: List.prototype[name]
+    })
 })

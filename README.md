@@ -11,32 +11,32 @@ npm install @dandre3000/list
 ## Usage
 
 ```js
-import { List, ListNode } from '@dandre3000/list';
+import { List, ListNode } from '@dandre3000/list'
 
 // Create a new list
-const list = new List(1, 2, 3);
+const list = new List(1, 2, 3)
 
 // Add values
-list.push(4, 5);
-list.unshift(0);
+list.push(4, 5)
+list.unshift(0)
 
 // Remove values
-list.pop();
-list.shift();
+list.pop()
+list.shift()
 
 // Iterate list values
 for (const node of list) {
-  console.log(node);
+  console.log(node)
 }
 
 // Access nodes
-const firstNode = list.first();
-const lastNode = list.last();
-const nodeAt2 = list.at(2);
+const firstNode = list.first()
+const lastNode = list.last()
+const nodeAt2 = list.at(2)
 
 // Node operations
-firstNode.next();
-lastNode.previous();
+firstNode.next()
+lastNode.previous()
 ```
 
 ## API
@@ -114,6 +114,8 @@ lastNode.previous();
   - Copies values within list ranges
 - `sort(callback): this`
   - Sorts values in the list
+- `flat(depth?: number): this`
+  - Concatenate nested list values into the list
 - `slice(start?: number, end?: number): List<T>`
   - Returns a copy of a portion of the list
 - `includes(value: T, backwards?: boolean): boolean`
