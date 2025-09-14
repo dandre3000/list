@@ -1,3 +1,12 @@
+declare const symbolPrivate: unique symbol;
+declare const symbolPrivateKey: unique symbol;
+/** ListNode instance #data property */
+type ListNodeData<T> = {
+    node: ListNode<T>;
+    listData: ListData<T> | null;
+    previous: ListNodeData<T> | null;
+    next: ListNodeData<T> | null;
+};
 /** A doubly linked list node. */
 export declare class ListNode<T> {
     #private;
@@ -7,7 +16,6 @@ export declare class ListNode<T> {
     /**
      * Create a ListNode instance.
      * @param value The value this node will contain.
-     * @throws { TypeError } if called without the new operator
      */
     constructor(value: T);
     /**
@@ -15,7 +23,6 @@ export declare class ListNode<T> {
      * @param value The value this node will contain.
      * @param node The node that will be appended or prepended with this.
      * @param append If the append argument is truthy then append this to node else prepend this to node. (default false)
-     * @throws { TypeError } if called without the new operator
      * @throws { TypeError } if node is not a ListNode instance
      * @throws { RangeError } if node.list().length() would exceed List.maxLength
      */
@@ -61,7 +68,8 @@ export declare class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if list is not a List instance
      * @throws { RangeError } if list length would exceed List.maxLength (16777216)
-     * @throws { RangeError } if index is not an integer greater than -1 and less than list.length() + 1
+     * @throws { TypeError } if index can not be converted to a number
+     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to list.length()
      */
     insertInto(list: List<T>, index?: number): this;
     /**
@@ -70,24 +78,72 @@ export declare class ListNode<T> {
      */
     remove(): this;
 }
+/** List instance #data property */
+type ListData<T> = {
+    list: List<T>;
+    first: ListNodeData<T> | null;
+    last: ListNodeData<T> | null;
+    length: number;
+};
+interface ListIterator<T> extends IteratorObject<T, BuiltinIteratorReturn, unknown> {
+    [Symbol.iterator](): ListIterator<T>;
+}
 /** Doubly linked list */
-export declare class List<T> implements Iterable<ListNode<T>> {
+export declare class List<T> {
     #private;
     /** The maximum length of all lists. */
-    static readonly maxLength: number;
+    static readonly maxLength = 16777216;
+    /**
+     * Create a new, shallow-copied List instance from an iterable.
+     * @param items An iterable to convert to a List.
+     */
+    static from<T>(items: Iterable<T>): List<T>;
+    /**
+     * Create a new, shallow-copied List instance from an iterable.
+     * @param items An iterable to convert to a List.
+     * @param mapFn A function to call on every element of the iterable.
+     * If provided, every value to be added to the list is first passed through this function,
+     * and mapFn's return value is added to the list instead.
+     * The function is called with the following arguments:
+     *
+     * element: The current element being processed in the iterable.
+     *
+     * index: The index of the current element being processed in the iterable.
+     * @param self Value to use as this when executing mapFn.
+     */
+    static from<T, U>(items: Iterable<T>, mapFn: (element: T, index: number) => U, self?: any): List<U>;
+    /**
+     * Asynchronously create a new, shallow-copied List instance from an iterable.
+     * @param items An iterable to convert to a List.
+     */
+    static fromAsync<T>(items: Iterable<T> | AsyncIterable<T>): Promise<List<T>>;
+    /**
+     * Asynchronously create a new, shallow-copied List instance from an iterable.
+     * @param items An iterable to convert to a list.
+     * @param mapFn A function to call on every element of the list.
+     * If provided, every value to be added to the list is first passed through this function,
+     * and mapFn's return value is added to the list instead (after being awaited).
+     * The function is called with the following arguments:
+     *
+     * element: The current element being processed in the list.
+     * If items is a sync iterable then all elements are first awaited, and element will never be a thenable.
+     * If items is an async iterable, then each yielded value is passed as-is.
+     *
+     * index: The index of the current element being processed in the iterable.
+     * @param self Value to use as this when executing mapFn.
+     */
+    static fromAsync<T, U>(items: Iterable<T> | AsyncIterable<T>, mapFn: (element: T, index: number) => U, self?: any): Promise<List<U>>;
     static [Symbol.hasInstance](instance: any): boolean;
     [Symbol.toStringTag]: string;
     /**
      * Create a List instance with the specified length where all node values are undefined.
      * @param length The amount of nodes this list will initially contain.
-     * @throws {TypeError} if called without the new operator
      * @throws {RangeError} if length is not an integer greater than -1 and less than List.maxLength (16777216)
      */
     constructor(length: number);
     /**
      * Create a List instance and insert the given values.
      * @param values The values this list will initially contain.
-     * @throws { TypeError } if called without the new operator
      */
     constructor(...values: T[]);
     /**
@@ -102,11 +158,11 @@ export declare class List<T> implements Iterable<ListNode<T>> {
     last(): ListNode<T>;
     /**
      * Return the node at the given index or null if index is out of bounds.
-     * @param index The position of the node.
+     * @param index The position of the node. (default 0)
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if index is not an integer greater than -1 and less than this.length() - 1
+     * @throws { TypeError } if index can not be converted to a number
      */
-    at(index: number): ListNode<T> | null;
+    at(index?: number): ListNode<T> | null;
     /**
      * Return the length of this list.
      * @throws { TypeError } if this is not a List instance
@@ -128,13 +184,14 @@ export declare class List<T> implements Iterable<ListNode<T>> {
     push(...values: T[]): number;
     /**
      * Insert the values into this list at the given index and return this length.
-     * @param index The position where values will be inserted.
+     * @param index The position where values will be inserted. (default 0)
      * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if index is not an integer greater than -1 or less than this length + 1
-     * @throws { RangeError } if list.length() would exceed List.maxLength (2 ** 24 - 1)
+     * @throws { TypeError } if index can not be converted to a number
+     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to this.length()
+     * @throws { RangeError } if this.length() would exceed List.maxLength (2 ** 24 - 1)
      */
-    insert(index: number, ...values: T[]): number;
+    insert(index?: number, ...values: T[]): number;
     /**
      * Remove the first node of this list and return it or null if this is empty.
      * @throws { TypeError } if this is not a List instance
@@ -165,8 +222,8 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param start The position that along with end determines the range of nodes to move.
      * @param end The position that along with start determines the range of nodes to move.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if start or end is not an integer
-     * @throws { RangeError } if start or end is less than 0 or greater than or equal to this length
+     * @throws { TypeError } if start or end can not be converted to a number
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
      */
     splice(start: number, end: number): List<T>;
     /**
@@ -174,16 +231,16 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * The range is defined by Math.min(start, end) to Math.max(start, end).
      * Therefore start or end can be the higher index, (List instance).splice(start, end, ...)
      * and (List instance).splice(end, start, ...) are the same operation.
-     * @param start The position that along with end determines the range of nodes to move.
-     * @param end The position that along with start determines the range of nodes to move.
-     * @param target The position in list where the nodes will be inserted.
+     * @param start The position that along with end determines the range of nodes to move. (defualt 0)
+     * @param end The position that along with start determines the range of nodes to move. (defualt 0)
+     * @param target The position in list where the nodes will be inserted. (defualt 0)
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if start or end is not an integer greater than -1 or less than this length
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
      * @throws { TypeError } if list is not a List instance
      * @throws { RangeError } if list.length() would exceed List.maxLength (16777216)
-     * @throws { TypeError } if list is defined but target is undefined
-     * @throws { RangeError } if list is defined but target is not a integer greater than -1
-     * or less than list length (minus number of nodes to be moved if list === this) + 1
+     * @throws { TypeError } if target can not be converted to a number
+     * @throws { RangeError } if target is not greater than or equal to 0
+     * and less than list.length() (minus number of nodes to be moved if list === this) + 1
      */
     splice(start: number, end: number, list: List<T>, target: number): List<T>;
     /**
@@ -197,18 +254,24 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      */
     reverse(): this;
     /**
+     * Return a new list with the nodes in reversed order.
+     * @throws { TypeError } if this is not a List instance
+     */
+    toReversed(): List<T>;
+    /**
      * Copy the values of a range of nodes within this list to another range of nodes within this list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
      * Therefore start or end can be the higher index, (List instance).copyWithin(start, end, ...) and (List instance).copyWithin(end, start, ...) are the same operation.
-     * @param start The position that along with end determines the range of nodes whose values will be copied.
-     * @param end The position that along with start determines the range of nodes whose values will be copied.
-     * @param target The position of the range of nodes whose values will be mutated.
+     * @param start The position that along with end determines the range of nodes whose values will be copied. (default 0)
+     * @param end The position that along with start determines the range of nodes whose values will be copied. (default 0)
+     * @param target The position of the range of nodes whose values will be mutated. (default 0)
      * @param targetEnd determines whether target is the start of the range of nodes if false
      * or is the end of the range if true.
      * @throws { TypeError } if this is not a List instance
-     * @throws { TypeError } if start, end or target is not an integer greater than -1 and less than this.length()
+     * @throws { TypeError } if start, end or target can not be converted to a number
+     * @throws { TypeError } if start, end or target is not greater than or equal to 0 and less than this.length()
      */
-    copyWithin(start: number, end: number, target: number, targetEnd?: boolean): this;
+    copyWithin(start?: number, end?: number, target?: number, targetEnd?: boolean): this;
     /**
      * Sort the values of this list where the order is determined by the callback.
      * @param callback A function that determines the order of the nodes.
@@ -230,7 +293,8 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * Concatenate all nested lists into this recursively up to the specified depth.
      * @param depth The maximum recursion depth. (default 1)
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if depth is not an integer greater than 0
+     * @throws { TypeError } if depth can not be converted to a number
+     * @throws { RangeError } if depth is not greater than 0
      * @throws { RangeError } if this.length() would exceed List.maxLength (16777216)
      */
     flat(depth?: number): this;
@@ -241,7 +305,8 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * @param start default 0
      * @param end default this.length() - 1
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if start or end is not a integer greater than -1 and less than this.length()
+     * @throws { TypeError } if start or end can not be converted to a number
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
      */
     slice(start?: number, end?: number): List<T>;
     /**
@@ -335,11 +400,11 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * using the return value of the previous call as the accumulator argument for the next call.
      * Return accumulator after the iteration is finished.
      * @param callback A function to execute for each node in the list.
-     * Its return value becomes the value of the accumulator parameter on the next invocation of callbackFn.
+     * Its return value becomes the value of the accumulator parameter on the next invocation of callback.
      * For the last invocation, the return value becomes the return value of reduce().
      * The function is called with the following arguments:
      *
-     * accumulator: The value resulting from the previous call to callbackFn. On the first call, its value is initialValue.
+     * accumulator: The value resulting from the previous call to callback. On the first call, its value is initialValue.
      *
      * node: The current node.
      *
@@ -428,5 +493,7 @@ export declare class List<T> implements Iterable<ListNode<T>> {
      * Return an iterator representng this list.
      * @throws { TypeError } if this is not a List instance
      */
-    [Symbol.iterator](): ArrayIterator<ListNode<T>>;
+    [Symbol.iterator](): ListIterator<ListNode<T>>;
+    [symbolPrivate](key: typeof symbolPrivateKey): ListData<T>;
 }
+export {};
