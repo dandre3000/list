@@ -1,0 +1,40 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+        
+    - name: Install dependencies
+      run: bun install
+      
+    - name: Run tests with coverage
+      run: bun test --coverage
+      
+    - name: Generate Coverage Badge
+      uses: jaywcjlove/coverage-badges-cli@main
+      with:
+        source: coverage/coverage-summary.json
+        output: coverage/badge-lines.svg
+        
+    - name: Commit and push coverage badge
+      if: github.ref == 'refs/heads/main'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add coverage/badge-lines.svg
+        git commit -m "Update coverage badge" || exit 0
+        git push
