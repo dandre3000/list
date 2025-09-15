@@ -23,18 +23,3 @@ jobs:
       
     - name: Run tests with coverage
       run: bun test --coverage
-      
-    - name: Generate Coverage Badge
-      uses: jaywcjlove/coverage-badges-cli@main
-      with:
-        source: coverage/coverage-summary.json
-        output: coverage/badge-lines.svg
-        
-    - name: Commit and push coverage badge
-      if: github.ref == 'refs/heads/main'
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add coverage/badge-lines.svg
-        git commit -m "Update coverage badge" || exit 0
-        git push
