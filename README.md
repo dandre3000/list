@@ -1,5 +1,3 @@
-![coverage](./badge.svg)
-
 # list
 
 Exports a `List` class that represents a doubly linked list with methods based on the `Array` class, and a `ListNode` class that represents a node that may be contained in a `List`.
