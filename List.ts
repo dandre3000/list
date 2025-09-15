@@ -1,6 +1,3 @@
-const symbolPrivate = Symbol('#private')
-const symbolPrivateKey = Symbol()
-
 /** ListNode instance #data property */
 type ListNodeData<T> = {
     node: ListNode<T>
@@ -9,7 +6,8 @@ type ListNodeData<T> = {
     next: ListNodeData<T> | null
 }
 
-let newListNodeData: ListNodeData<any>
+// allow access to ListNode instance #data property in List methods
+let privateListNodeData: ListNodeData<any>
 
 /** A doubly linked list node. */
 export class ListNode<T> {
@@ -56,7 +54,7 @@ export class ListNode<T> {
                 throw new RangeError(`node.list().length() (${targetListData.length}) would exceed List.maxLength (16777216)`)
         }
 
-        const currentNodeData: ListNodeData<T> = newListNodeData = this.#data = {
+        const currentNodeData: ListNodeData<T> = privateListNodeData = this.#data = {
             node: this,
             listData: targetListData,
             previous: null,
@@ -68,9 +66,9 @@ export class ListNode<T> {
         if (!targetNodeData) return
 
         if (!targetListData) {
-            new List // newListData = new List().#data
+            new List // privateListData = new List().#data
 
-            targetNodeData.listData = targetListData = newListData
+            targetNodeData.listData = targetListData = privateListData
             targetListData.first = targetListData.last = targetNodeData
             targetListData.length = 2
             currentNodeData.listData = targetListData
@@ -99,32 +97,30 @@ export class ListNode<T> {
     }
 
     /**
-     * Return the list containing this node or null if this is not in a list.
+     * The list containing this node or null if this is not in a list.
      * @throws { TypeError } if this is not a ListNode instance
      */
-    list (): List<T> | null {
+    get list (): List<T> | null {
         try { return this.#data.listData === null ? null : this.#data.listData.list } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
         }
     }
 
     /**
-     * Return the previous node in the list containing this node.
-     * Return null if this is the first node in the list or if this is not in a list.
+     * The previous node in this list or null if this is the first node in the list or if this is not in a list.
      * @throws { TypeError } if this is not a ListNode instance
      */
-    previous (): ListNode<T> | null {
+    get previous (): ListNode<T> | null {
         try { return this.#data.previous === null ? null : this.#data.previous.node } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
         }
     }
 
     /**
-     * Return the next node in the list containing this node.
-     * Return null if this is the last node in the list or if this is not in a list.
+     * The next node in this list or null if this is the last node in the list or if this is not in a list.
      * @throws { TypeError } if this is not a ListNode instance
      */
-    next (): ListNode<T> | null {
+    get next (): ListNode<T> | null {
         try { return this.#data.next === null ? null : this.#data.next.node } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
         }
@@ -162,7 +158,7 @@ export class ListNode<T> {
         } // create new list if node is not in one
         else {
             new List
-            targetNodeData.listData = targetListData = newListData
+            targetNodeData.listData = targetListData = privateListData
             targetListData.first = targetNodeData
             targetListData.last = targetNodeData
             targetListData.length = 1
@@ -231,7 +227,7 @@ export class ListNode<T> {
         } // create new list if node is not in one
         else {
             new List
-            targetNodeData.listData = targetListData = newListData
+            targetNodeData.listData = targetListData = privateListData
             targetListData.first = targetNodeData
             targetListData.last = targetNodeData
             targetListData.length = 1
@@ -285,20 +281,18 @@ export class ListNode<T> {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
         }
 
-        let targetListData: ListData<T>
-
-        try { targetListData = list[symbolPrivate](symbolPrivateKey) } catch (error) {
+        // privateListData = list.#data
+        if (!(list instanceof List))
             throw new TypeError(`list argument (${Object.prototype.toString.call(list)}) is not a List instance`)
-        }
 
-        if (targetListData.length >= List.maxLength)
-            throw new RangeError(`list.length() (${targetListData.length}) + 1 would exceed List.maxLength (16777216)`)
+        if (privateListData.length >= List.maxLength)
+            throw new RangeError(`list.length() (${privateListData.length}) + 1 would exceed List.maxLength (16777216)`)
 
         // convert to number
         index >>= 0
 
-        if (index < 0 || index > targetListData.length)
-            throw new RangeError(`index argument (${index}) is not greater than or equal to 0 and less than or equal to list.length() ${targetListData.length}`)
+        if (index < 0 || index > privateListData.length)
+            throw new RangeError(`index argument (${index}) is not greater than or equal to 0 and less than or equal to list.length() ${privateListData.length}`)
 
         let currentNodeData = this.#data
         const currentListData = currentNodeData.listData
@@ -320,34 +314,34 @@ export class ListNode<T> {
         let targetNodeData: ListNodeData<T> | null = null
         let append = false
 
-        currentNodeData.listData = targetListData
+        currentNodeData.listData = privateListData
 
         // empty list
-        if (targetListData.length === 0) {
-            targetListData.first = targetListData.last = currentNodeData
-            targetListData.length = 1
+        if (privateListData.length === 0) {
+            privateListData.first = privateListData.last = currentNodeData
+            privateListData.length = 1
 
             return this
         }
 
         // first node
         if (index === 0)
-            targetNodeData = targetListData.first
+            targetNodeData = privateListData.first
         // last node
-        else if (index >= targetListData.length - 1) {
+        else if (index >= privateListData.length - 1) {
             // prepend
-            targetNodeData = targetListData.last
+            targetNodeData = privateListData.last
 
             // append
-            if (index === targetListData.length) append = true
+            if (index === privateListData.length) append = true
         } // get target node; O (n / 2)
         else {
             let i: number
 
             // forwards; Math.floor(list.length() / 2)
-            if (index < targetListData.length >>> 1) {
+            if (index < privateListData.length >>> 1) {
                 // skip first node
-                targetNodeData = (targetListData.first as ListNodeData<T>).next
+                targetNodeData = (privateListData.first as ListNodeData<T>).next
                 i = 1
 
                 while (targetNodeData) {
@@ -359,8 +353,8 @@ export class ListNode<T> {
             } // backwards
             else {
                 // skip last node
-                targetNodeData = (targetListData.last as ListNodeData<T>).previous
-                i = targetListData.length - 2
+                targetNodeData = (privateListData.last as ListNodeData<T>).previous
+                i = privateListData.length - 2
 
                 while (targetNodeData) {
                     if (index === i) break
@@ -371,14 +365,14 @@ export class ListNode<T> {
             }
         }
 
-        targetListData.length++
+        privateListData.length++
 
         if (append) {
             if (targetNodeData.next) {
                 targetNodeData.next.previous = currentNodeData
                 currentNodeData.next = targetNodeData.next
             } else
-                targetListData.last = currentNodeData
+                privateListData.last = currentNodeData
 
             currentNodeData.previous = targetNodeData
             targetNodeData.next = currentNodeData
@@ -387,7 +381,7 @@ export class ListNode<T> {
                 targetNodeData.previous.next = currentNodeData
                 currentNodeData.previous = targetNodeData.previous
             } else
-                targetListData.first = currentNodeData
+                privateListData.first = currentNodeData
 
             currentNodeData.next = targetNodeData
             targetNodeData.previous = currentNodeData
@@ -441,7 +435,8 @@ interface ListIterator<T> extends IteratorObject<T, BuiltinIteratorReturn, unkno
     [Symbol.iterator](): ListIterator<T>;
 }
 
-let newListData: ListData<any>
+// allow access to List instance #data property in ListNode methods
+let privateListData: ListData<any>
 
 /** Doubly linked list */
 export class List<T> {
@@ -490,14 +485,14 @@ export class List<T> {
         if (mapFn === undefined) {
             new ListNode(result?.value)
             
-            newListData.first = newListData.last = newListNodeData
-            newListData.length = 1
-            newListNodeData.listData = newListData
+            privateListData.first = privateListData.last = privateListNodeData
+            privateListData.length = 1
+            privateListNodeData.listData = privateListData
 
             result = iterator.next()
 
             while (result?.done !== true) {
-                new ListNode(result?.value, newListNodeData.node, true)
+                new ListNode(result?.value, privateListNodeData.node, true)
 
                 result = iterator.next()
             }
@@ -506,14 +501,14 @@ export class List<T> {
 
             new ListNode(mapFn.call(self, result.value, i))
 
-            newListData.first = newListData.last = newListNodeData
-            newListData.length = 1
-            newListNodeData.listData = newListData
+            privateListData.first = privateListData.last = privateListNodeData
+            privateListData.length = 1
+            privateListNodeData.listData = privateListData
 
             result = iterator.next()
 
             while (result.done !== true) {
-                new ListNode(mapFn.call(self, result.value, ++i), newListNodeData.node, true)
+                new ListNode(mapFn.call(self, result.value, ++i), privateListNodeData.node, true)
 
                 result = iterator.next()
             }
@@ -576,14 +571,14 @@ export class List<T> {
             if (mapFn === undefined) {
                 new ListNode(result.value)
                 
-                newListData.first = newListData.last = newListNodeData
-                newListData.length = 1
-                newListNodeData.listData = newListData
+                privateListData.first = privateListData.last = privateListNodeData
+                privateListData.length = 1
+                privateListNodeData.listData = privateListData
 
                 result = await iterator.next()
 
                 while (result.done !== true) {
-                    new ListNode(result.value, newListNodeData.node, true)
+                    new ListNode(result.value, privateListNodeData.node, true)
 
                     result = await iterator.next()
                 }
@@ -592,14 +587,14 @@ export class List<T> {
 
                 new ListNode(mapFn.call(self, result.value, i))
 
-                newListData.first = newListData.last = newListNodeData
-                newListData.length = 1
-                newListNodeData.listData = newListData
+                privateListData.first = privateListData.last = privateListNodeData
+                privateListData.length = 1
+                privateListNodeData.listData = privateListData
 
                 result = await iterator.next()
 
                 while (result.done !== true) {
-                    new ListNode(mapFn.call(self, result.value, ++i), newListNodeData.node, true)
+                    new ListNode(mapFn.call(self, result.value, ++i), privateListNodeData.node, true)
 
                     result = await iterator.next()
                 }
@@ -612,7 +607,7 @@ export class List<T> {
     }
 
     static [Symbol.hasInstance] (instance) {
-        try { instance.#data } catch (error) { return false }
+        try { privateListData = instance.#data } catch (error) { return false }
 
         return true
     }
@@ -635,7 +630,7 @@ export class List<T> {
     constructor (...values: T[])
 
     constructor (...values: T[]) {
-        const listData = newListData = this.#data = {
+        const listData = privateListData = this.#data = {
             list: this,
             first: null,
             last: null,
@@ -656,46 +651,56 @@ export class List<T> {
             if (length > 0) {
                 new ListNode(undefined)
 
-                newListNodeData.listData = listData
-                listData.first = listData.last = newListNodeData
+                privateListNodeData.listData = listData
+                listData.first = listData.last = privateListNodeData
                 listData.length = 1
             }
 
             for (let i = 1; i < length; i++) {
-                new ListNode(undefined, newListNodeData.node, true)
+                new ListNode(undefined, privateListNodeData.node, true)
             }
         } // fill with values
         else {
             if (values.length > 0) {
                 new ListNode(values[0])
 
-                newListNodeData.listData = listData
-                listData.first = listData.last = newListNodeData
+                privateListNodeData.listData = listData
+                listData.first = listData.last = privateListNodeData
                 listData.length = 1
             }
 
             for (let i = 1; i < values.length; i++) {
-                new ListNode(values[i], newListNodeData.node, true)
+                new ListNode(values[i], privateListNodeData.node, true)
             }
         }
     }
 
     /**
-     * Return the first node in this list or null if it is empty.
+     * The first node in this list or null if this is empty.
      * @throws { TypeError } if this is not a List instance
      */
-    first () {
+    get first () {
         try { return (this.#data.first === null ? null : this.#data.first.node) } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
         }
     }
 
     /**
-     * Return the last node in this list or null if it is empty.
+     * The last node in this list or null if this is empty.
      * @throws { TypeError } if this is not a List instance
      */
-    last () {
+    get last () {
         try { return (this.#data.last === null ? null : this.#data.last.node) } catch (error) {
+            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
+        }
+    }
+
+    /**
+     * The length of this list.
+     * @throws { TypeError } if this is not a List instance
+     */
+    get length () {
+        try { return this.#data.length } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
         }
     }
@@ -762,16 +767,6 @@ export class List<T> {
     }
 
     /**
-     * Return the length of this list.
-     * @throws { TypeError } if this is not a List instance
-     */
-    length () {
-        try { return this.#data.length } catch (error) {
-            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
-        }
-    }
-
-    /**
      * Insert the values to the front of this list and return this length.
      * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
@@ -792,9 +787,9 @@ export class List<T> {
 
             if (listData.length === 0) {
                 new ListNode(values[i])
-                newListNodeData.listData = listData
+                privateListNodeData.listData = listData
 
-                listData.first = listData.last = newListNodeData
+                listData.first = listData.last = privateListNodeData
                 listData.length = 1
 
                 i--
@@ -829,9 +824,9 @@ export class List<T> {
 
             if (listData.length === 0) {
                 new ListNode(values[i])
-                newListNodeData.listData = listData
+                privateListNodeData.listData = listData
 
-                listData.first = listData.last = newListNodeData
+                listData.first = listData.last = privateListNodeData
                 listData.length = 1
 
                 i = 1
@@ -879,9 +874,9 @@ export class List<T> {
         if (index === 0) {
             if (listData.length === 0) {
                 new ListNode(values[i])
-                newListNodeData.listData = listData
+                privateListNodeData.listData = listData
 
-                listData.first = listData.last = newListNodeData
+                listData.first = listData.last = privateListNodeData
                 listData.length = 1
 
                 i--
@@ -1430,38 +1425,6 @@ export class List<T> {
     }
 
     /**
-     * Return a new list with the nodes in reversed order.
-     * @throws { TypeError } if this is not a List instance
-     */
-    toReversed () {
-        try { this.#data } catch (error) {
-            throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
-        }
-
-        new List()
-
-        if (this.#data.length === 0) return newListData.list as List<T>
-
-        let nodeData = this.#data.first
-
-        new ListNode(nodeData.node.value)
-
-        newListData.first = newListData.last = newListNodeData
-        newListData.length = 1
-        newListNodeData.listData = newListData
-
-        nodeData = nodeData.next
-
-        while (nodeData) {
-            new ListNode(nodeData.node.value, newListNodeData.node)
-
-            nodeData = nodeData.next
-        }
-
-        return newListData.list as List<T>
-    }
-
-    /**
      * Copy the values of a range of nodes within this list to another range of nodes within this list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
      * Therefore start or end can be the higher index, (List instance).copyWithin(start, end, ...) and (List instance).copyWithin(end, start, ...) are the same operation.
@@ -1645,25 +1608,34 @@ export class List<T> {
 
         if (typeof callback !== 'function') throw new TypeError(`callback (${typeof callback} is not a function)`)
 
-        const nodes: ListNode<T>[] = []
-        let nodeData: ListNodeData<T> | null = this.#data.first
-        let i = 0
+        const listData = this.#data
 
-        while (nodeData) {
-            nodes[i] = nodeData.node
-            nodeData = nodeData.next
-            i++
-        }
+        if (listData.length <= 1) return this
 
-        const values = nodes.sort(callback).map(({ value }) => value)
+        let currentNodeData = listData.first.next
 
-        nodeData = this.#data.first
-        i = 0
+        while (currentNodeData) {
+            const nextNodeData = currentNodeData.next
 
-        while (nodeData) {
-            nodeData.node.value = values[i]
-            nodeData = nodeData.next
-            i++
+            while (currentNodeData.previous !== null && callback(currentNodeData.previous.node, currentNodeData.node) > 0) {
+                const previousPreviousNodeData = currentNodeData.previous.previous
+                const previousNodeData = currentNodeData.previous
+                const nextNodeData = currentNodeData.next
+
+                if (listData.first === previousNodeData)
+                    listData.first = currentNodeData
+                if (listData.last === currentNodeData)
+                    listData.last = previousNodeData
+
+                if (previousPreviousNodeData !== null) previousPreviousNodeData.next = currentNodeData
+                currentNodeData.previous = previousPreviousNodeData
+                currentNodeData.next = previousNodeData
+                previousNodeData.previous = currentNodeData
+                previousNodeData.next = nextNodeData
+                if (nextNodeData !== null) nextNodeData.previous = previousNodeData
+            }
+
+            currentNodeData = nextNodeData
         }
 
         return this
@@ -1782,7 +1754,7 @@ export class List<T> {
         new List
 
         if (currentListData.length === 0)
-            return newListData.list as List<T>
+            return privateListData.list as List<T>
 
         // start = Math.min(start, end); end = Math.max(start, end)
         if (end < start) {
@@ -1804,9 +1776,9 @@ export class List<T> {
                 if (i >= start && i <= end) {
                     new ListNode(currentNodeData.node.value)
 
-                    newListData.first = newListData.last = newListNodeData
-                    newListData.length = 1
-                    newListNodeData.listData = newListData
+                    privateListData.first = privateListData.last = privateListNodeData
+                    privateListData.length = 1
+                    privateListNodeData.listData = privateListData
 
                     currentNodeData = currentNodeData.next
                     i++
@@ -1820,7 +1792,7 @@ export class List<T> {
 
             while (currentNodeData) {
                 if (i >= start && i <= end) {
-                    new ListNode(currentNodeData.node.value, newListNodeData.node, true)
+                    new ListNode(currentNodeData.node.value, privateListNodeData.node, true)
 
                     if (i === end) break
                 }
@@ -1836,9 +1808,9 @@ export class List<T> {
                 if (i >= start && i <= end) {
                     new ListNode(currentNodeData.node.value)
 
-                    newListData.first = newListData.last = newListNodeData
-                    newListData.length = 1
-                    newListNodeData.listData = newListData
+                    privateListData.first = privateListData.last = privateListNodeData
+                    privateListData.length = 1
+                    privateListNodeData.listData = privateListData
 
                     currentNodeData = currentNodeData.previous
                     i--
@@ -1852,7 +1824,7 @@ export class List<T> {
 
             while (currentNodeData) {
                 if (i >= start && i <= end) {
-                    new ListNode(currentNodeData.node.value, newListNodeData.node)
+                    new ListNode(currentNodeData.node.value, privateListNodeData.node)
 
                     if (i === start) break
                 }
@@ -1862,7 +1834,7 @@ export class List<T> {
             }
         }
 
-        return newListData.list as List<T>
+        return privateListData.list as List<T>
     }
 
     /**
@@ -2452,7 +2424,8 @@ export class List<T> {
         
         let length = this.#data.length
 
-        if (length + values.length === 0) return new List<T>
+        if (length + values.length === 0)
+            return new List<T>
         else if (length + values.length > List.maxLength)
             throw new RangeError(`the new list length (${length + values.length}) would exceed List.maxLength (16777216)`)
 
@@ -2465,54 +2438,65 @@ export class List<T> {
 
         if (length > List.maxLength) throw new RangeError(`the new list length (${length}) would exceed List.maxLength (16777216)`)
 
-        let targetNode: ListNode<T>
         let nodeData: ListNodeData<T> | null = null
-        let value = values[0]
-        let i = 0
+
+        privateListData = null
+        privateListNodeData = null
 
         if (this.#data.length > 0) {
-            targetNode = new ListNode(this.#data.first.node.value)
-            nodeData = this.#data.first.next
+            nodeData = this.#data.first
+            new ListNode(nodeData.node.value)
+
+            nodeData = nodeData.next
 
             while (nodeData) {
-                targetNode = new ListNode(nodeData.node.value, targetNode, true)
+                new ListNode(nodeData.node.value, privateListNodeData.node, true)
     
                 nodeData = nodeData.next
             }
-        } else {
-            i++
+        }
+        
+        if (values.length > 0) {
+            let value = values[0]
 
             if (value instanceof List && value.#data.length > 0) {
                 nodeData = value.#data.first
-                targetNode = new ListNode(nodeData.node.value)
+                new ListNode(nodeData.node.value, privateListNodeData?.node, true)
 
                 nodeData = nodeData.next
 
                 while (nodeData) {
-                    targetNode = new ListNode(nodeData.node.value, targetNode, true)
+                    new ListNode(nodeData.node.value, privateListNodeData.node, true)
 
                     nodeData = nodeData.next
                 }
             } else
-                targetNode = new ListNode(value as T)
+                new ListNode(value, privateListNodeData?.node, true)
+
+            for (let i = 1; i < values.length; i++) {
+                value = values[i]
+    
+                if (value instanceof List) {
+                    nodeData = value.#data.first
+    
+                    while (nodeData) {
+                        new ListNode(nodeData.node.value, privateListNodeData.node, true)
+    
+                        nodeData = nodeData.next
+                    }
+                } else
+                    new ListNode(value, privateListNodeData.node, true)
+            }
         }
 
-        for (i; i < values.length; i++) {
-            value = values[i]
-
-            if (value instanceof List) {
-                nodeData = value.#data.first
-
-                while (nodeData) {
-                    targetNode = new ListNode(nodeData.node.value, targetNode, true)
-
-                    nodeData = nodeData.next
-                }
-            } else
-                targetNode = new ListNode(value, targetNode, true)
+        if (privateListData === null) {
+            new List()
+            privateListData.first = privateListData.last = privateListNodeData
+            privateListData.length = 1
+            privateListNodeData.listData = privateListData
         }
 
-        return targetNode.list()
+        return privateListData.list
     }
 
     /**
@@ -2633,14 +2617,9 @@ export class List<T> {
 
         return array[Symbol.iterator]()
     }
-
-    [symbolPrivate] (key: typeof symbolPrivateKey) {
-        if (key !== symbolPrivateKey) throw new Error('invalid')
-
-        return this.#data
-    }
 }
 
+// make class properties read only and non-enumerable if the key is a symbol
 Object.defineProperty(ListNode, Symbol.hasInstance, {
     configurable: false,
     writable: false,
@@ -2666,22 +2645,24 @@ let propertyNames = Object.getOwnPropertyNames(ListNode.prototype) as (string | 
 propertyNames.push(...Object.getOwnPropertySymbols(ListNode.prototype))
 
 propertyNames.forEach(name => {
-    Object.defineProperty(ListNode.prototype, name, {
-        configurable: false,
-        writable: false,
-        enumerable: typeof name === 'string' ? true : false,
-        value: ListNode.prototype[name]
-    })
+    const descriptor = Object.getOwnPropertyDescriptor(ListNode.prototype, name)
+    descriptor.configurable = false
+    descriptor.enumerable = typeof name === 'string' ? true : false
+
+    if (!descriptor.get && !descriptor.set) descriptor.writable = false
+
+    Object.defineProperty(ListNode.prototype, name, descriptor)
 })
 
 propertyNames = Object.getOwnPropertyNames(List.prototype) as (string | symbol)[]
 propertyNames.push(...Object.getOwnPropertySymbols(List.prototype))
 
 propertyNames.forEach(name => {
-    Object.defineProperty(List.prototype, name, {
-        configurable: false,
-        writable: false,
-        enumerable: typeof name === 'string' ? true : false,
-        value: List.prototype[name]
-    })
+    const descriptor = Object.getOwnPropertyDescriptor(List.prototype, name)
+    descriptor.configurable = false
+    descriptor.enumerable = typeof name === 'string' ? true : false
+
+    if (!descriptor.get && !descriptor.set) descriptor.writable = false
+
+    Object.defineProperty(List.prototype, name, descriptor)
 })

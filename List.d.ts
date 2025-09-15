@@ -1,12 +1,3 @@
-declare const symbolPrivate: unique symbol;
-declare const symbolPrivateKey: unique symbol;
-/** ListNode instance #data property */
-type ListNodeData<T> = {
-    node: ListNode<T>;
-    listData: ListData<T> | null;
-    previous: ListNodeData<T> | null;
-    next: ListNodeData<T> | null;
-};
 /** A doubly linked list node. */
 export declare class ListNode<T> {
     #private;
@@ -28,22 +19,20 @@ export declare class ListNode<T> {
      */
     constructor(value: T, node: ListNode<T>, append?: any);
     /**
-     * Return the list containing this node or null if this is not in a list.
+     * The list containing this node or null if this is not in a list.
      * @throws { TypeError } if this is not a ListNode instance
      */
-    list(): List<T> | null;
+    get list(): List<T> | null;
     /**
-     * Return the previous node in the list containing this node.
-     * Return null if this is the first node in the list or if this is not in a list.
+     * The previous node in this list or null if this is the first node in the list or if this is not in a list.
      * @throws { TypeError } if this is not a ListNode instance
      */
-    previous(): ListNode<T> | null;
+    get previous(): ListNode<T> | null;
     /**
-     * Return the next node in the list containing this node.
-     * Return null if this is the last node in the list or if this is not in a list.
+     * The next node in this list or null if this is the last node in the list or if this is not in a list.
      * @throws { TypeError } if this is not a ListNode instance
      */
-    next(): ListNode<T> | null;
+    get next(): ListNode<T> | null;
     /**
      * Remove this node from its containing list and prepend it to another node.
      * @param node The node that will be prepended with this.
@@ -78,13 +67,6 @@ export declare class ListNode<T> {
      */
     remove(): this;
 }
-/** List instance #data property */
-type ListData<T> = {
-    list: List<T>;
-    first: ListNodeData<T> | null;
-    last: ListNodeData<T> | null;
-    length: number;
-};
 interface ListIterator<T> extends IteratorObject<T, BuiltinIteratorReturn, unknown> {
     [Symbol.iterator](): ListIterator<T>;
 }
@@ -147,15 +129,20 @@ export declare class List<T> {
      */
     constructor(...values: T[]);
     /**
-     * Return the first node in this list or null if it is empty.
+     * The first node in this list or null if this is empty.
      * @throws { TypeError } if this is not a List instance
      */
-    first(): ListNode<T>;
+    get first(): ListNode<T>;
     /**
-     * Return the last node in this list or null if it is empty.
+     * The last node in this list or null if this is empty.
      * @throws { TypeError } if this is not a List instance
      */
-    last(): ListNode<T>;
+    get last(): ListNode<T>;
+    /**
+     * The length of this list.
+     * @throws { TypeError } if this is not a List instance
+     */
+    get length(): number;
     /**
      * Return the node at the given index or null if index is out of bounds.
      * @param index The position of the node. (default 0)
@@ -163,11 +150,6 @@ export declare class List<T> {
      * @throws { TypeError } if index can not be converted to a number
      */
     at(index?: number): ListNode<T> | null;
-    /**
-     * Return the length of this list.
-     * @throws { TypeError } if this is not a List instance
-     */
-    length(): number;
     /**
      * Insert the values to the front of this list and return this length.
      * @param values The values to be inserted.
@@ -253,11 +235,6 @@ export declare class List<T> {
      * @throws { TypeError } if this is not a List instance
      */
     reverse(): this;
-    /**
-     * Return a new list with the nodes in reversed order.
-     * @throws { TypeError } if this is not a List instance
-     */
-    toReversed(): List<T>;
     /**
      * Copy the values of a range of nodes within this list to another range of nodes within this list.
      * The range is defined by Math.min(start, end) to Math.max(start, end).
@@ -494,6 +471,5 @@ export declare class List<T> {
      * @throws { TypeError } if this is not a List instance
      */
     [Symbol.iterator](): ListIterator<ListNode<T>>;
-    [symbolPrivate](key: typeof symbolPrivateKey): ListData<T>;
 }
 export {};

@@ -1,3 +1,5 @@
+![coverage](./badge.svg)
+
 # list
 
 Exports a `List` class that represents a doubly linked list with methods based on the `Array` class, and a `ListNode` class that represents a node that may be contained in a `List`.
@@ -30,13 +32,13 @@ for (const node of list) {
 }
 
 // Access nodes
-const firstNode = list.first()
-const lastNode = list.last()
+const firstNode = list.first
+const lastNode = list.last
 const nodeAt2 = list.at(2)
 
 // Node operations
-firstNode.next()
-lastNode.previous()
+const nodeAt1 = firstNode.next
+nodeAt1 === lastNode.previous // true
 ```
 
 ## API
@@ -45,22 +47,23 @@ lastNode.previous()
 
 ### ListNode
 
-#### Properties
+#### Instance Properties
 
-- `value: T` – The value stored in the node
+- `value: T`
+  - The value stored in the node
+- `list: List<T> | null`
+  - The list containing this node or `null` if not in a list
+- `previous: ListNode<T> | null`
+  - The previous node in the list or `null`
+- `next: ListNode<T> | null`
+  - The next node in the list or `null`
 
-#### Methods
+#### Instance Methods
 
 - `constructor(value: T)`
   - Creates a `ListNode` instance with the given value
 - `constructor(value: T, list: List<T>, index: number)`
   - Creates a `ListNode` and inserts it into the given list at the specified index
-- `list(): List<T> | null`
-  - Returns the list containing this node or `null` if not in a list
-- `previous(): ListNode<T> | null`
-  - Returns the previous node in the list or `null`
-- `next(): ListNode<T> | null`
-  - Returns the next node in the list or `null`
 - `prependTo(node: ListNode<T>): this`
   - Removes this node from its list and prepends it to another node
 - `appendTo(node: ListNode<T>): this`
@@ -74,18 +77,32 @@ lastNode.previous()
 
 ### List
 
-#### Methods
+#### Static Methods
+
+- `from<T>(items: Iterable<T>): List<T>`
+  - Creates a `List` instance from an iterable
+- `from<T, U>(items: Iterable<T>, mapFn: (element: T, index: number) => U, self: any): List<U>`
+  - Creates a `List` instance with the mapped values of an iterable
+- `fromAsync<T>(items: Iterable<T> | AsyncIterable<T>): List<T>`
+  - Asynchronously creates a `List` instance from an iterable
+- `fromAsync<T, U>(items: Iterable<T> | AsyncIterable<T>, mapFn: (element: T, index: number) => U, self: any): List<U>`
+  - Asynchronously creates a `List` instance with the mapped values of an iterable
+
+#### Instance Properties
+
+- `first: ListNode<T>`
+  - The first node or `null` if empty
+- `last: ListNode<T>`
+  - The last node or `null` if empty
+- `length: number`
+  - The length of the list
+
+#### Instance Methods
 
 - `constructor(length: number)`
   - Creates a List with specified length, values are undefined
 - `constructor(...values: T[])`
   - Creates a `List` and inserts the given values
-- `first(): ListNode<T>`
-  - Returns the first node or `null` if empty
-- `last(): ListNode<T>`
-  - Returns the last node or `null` if empty
-- `length(): number`
-  - Returns the length of the list
 - `at(index: number): ListNode<T> | null`
   - Returns the node at the given index or `null` if index is out of bounds
 - `unshift(...values: T[]): number`
