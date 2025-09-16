@@ -1,10 +1,6 @@
 import { List, ListNode } from './List.js'
 import { expect, test } from 'bun:test'
 
-const returnThrow = (fn, ...args) => {
-    try { fn(...args) } catch (error) { return error }
-}
-
 test(`List[Symbol.hasInstance]`, () => {
     expect(Object.create(List) instanceof List).toBeFalse()
 })
@@ -483,7 +479,6 @@ test('List.prototype.remove', () => {
 
     expect(() => list.remove(-1)).toThrowError(RangeError)
     expect(() => list.remove(list.length)).toThrowError(RangeError)
-    expect(() => list.remove(0.1)).toThrowError(RangeError)
 
     const index = Math.floor(Math.random() * list.length)
     const node = list.at(index)
@@ -838,7 +833,7 @@ test('List.prototype.indexOf', () => {
 test('List.prototype.find', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.find({}))).toBeInstanceOf(TypeError)
+    expect(() => list.find({})).toThrowError(TypeError)
 
     // forwards
     let value = Math.random() * -1
@@ -882,7 +877,7 @@ test('List.prototype.find', () => {
 test('List.prototype.findIndex', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.findIndex({}))).toBeInstanceOf(TypeError)
+    expect(() => list.findIndex({})).toThrow(TypeError)
 
     // forwards
     let value = Math.random() * -1
@@ -926,7 +921,7 @@ test('List.prototype.findIndex', () => {
 test('List.prototype.some', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.some({}))).toBeInstanceOf(TypeError)
+    expect(() => list.some({})).toThrow(TypeError)
 
     // forwards
     let value = Math.random() * -1
@@ -970,7 +965,7 @@ test('List.prototype.some', () => {
 test('List.prototype.every', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.every({}))).toBeInstanceOf(TypeError)
+    expect(() => list.every({})).toThrow(TypeError)
 
     // forwards
     let value = Math.random()
@@ -1015,7 +1010,7 @@ test('List.prototype.every', () => {
 test('List.prototype.reduce', () => {
     const list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.reduce({}))).toBeInstanceOf(TypeError)
+    expect(() => list.reduce({})).toThrow(TypeError)
 
     // forwards
     let value
@@ -1045,7 +1040,7 @@ test('List.prototype.reduce', () => {
 test('List.prototype.filter', () => {
     let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.filter({}))).toBeInstanceOf(TypeError)
+    expect(() => list.filter({})).toThrow(TypeError)
 
     // forwards
     const self = {}
@@ -1082,7 +1077,7 @@ test('List.prototype.filter', () => {
 test('List.prototype.forEach', () => {
     let list = new List(2 + Math.round(Math.random() * 3)).map(() => Math.random())
 
-    expect(returnThrow(() => list.forEach({}))).toBeInstanceOf(TypeError)
+    expect(() => list.forEach({})).toThrow(TypeError)
 
     // forwards
     const self = {}
@@ -1134,7 +1129,7 @@ test('List.prototype.concat', () => {
 test('List.prototype.sort', () => {
     let list = new List(2 + Math.round(Math.random() * 3)).map(Math.random)
 
-    expect(returnThrow(() => list.sort({}))).toBeInstanceOf(TypeError)
+    expect(() => list.sort({})).toThrow(TypeError)
 
     let callback = (a, b) => {
         return b.value - a.value

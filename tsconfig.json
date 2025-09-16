@@ -1,7 +1,7 @@
 {
     "files": ["List.ts"],
     "compilerOptions": {
-        "target": "esnext",
+        "target": "es2024",
         "moduleResolution": "bundler",
         "declaration": true,
         "declarationDir": "./",

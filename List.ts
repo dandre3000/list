@@ -35,7 +35,7 @@ export class ListNode<T> {
      * @param node The node that will be appended or prepended with this.
      * @param append If the append argument is truthy then append this to node else prepend this to node. (default false)
      * @throws { TypeError } if node is not a ListNode instance
-     * @throws { RangeError } if node.list().length() would exceed List.maxLength
+     * @throws { RangeError } if node.list.length would exceed List.maxLength
      */
     constructor (value: T, node: ListNode<T>, append?)
 
@@ -43,15 +43,15 @@ export class ListNode<T> {
         let targetNodeData: ListNodeData<T>
         let targetListData: ListData<T> | null = null
 
-        if (node !== undefined) {
+        if (node) {
             try { targetNodeData = node.#data } catch (error) {
                 throw new TypeError(`node argument (${Object.prototype.toString.call(node)}) is not a ListNode instance`)
             }
 
             targetListData = targetNodeData.listData
 
-            if (targetListData !== null && targetListData.length >= List.maxLength)
-                throw new RangeError(`node.list().length() (${targetListData.length}) would exceed List.maxLength (16777216)`)
+            if (targetListData && targetListData.length >= List.maxLength)
+                throw new RangeError(`node.list.length (${targetListData.length}) would exceed List.maxLength (16777216)`)
         }
 
         const currentNodeData: ListNodeData<T> = privateListNodeData = this.#data = {
@@ -101,7 +101,7 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      */
     get list (): List<T> | null {
-        try { return this.#data.listData === null ? null : this.#data.listData.list } catch (error) {
+        try { return this.#data.listData?.list || null } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
         }
     }
@@ -111,7 +111,7 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      */
     get previous (): ListNode<T> | null {
-        try { return this.#data.previous === null ? null : this.#data.previous.node } catch (error) {
+        try { return this.#data.previous?.node || null } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
         }
     }
@@ -121,7 +121,7 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      */
     get next (): ListNode<T> | null {
-        try { return this.#data.next === null ? null : this.#data.next.node } catch (error) {
+        try { return this.#data.next?.node || null } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a ListNode instance`)
         }
     }
@@ -132,7 +132,7 @@ export class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
-     * @throws { RangeError } if node.list().length() would exceed List.maxLength (16777216)
+     * @throws { RangeError } if node.list.length would exceed List.maxLength (16777216)
      */
     prependTo (node: ListNode<T>) {
         try { this.#data } catch (error) {
@@ -149,12 +149,10 @@ export class ListNode<T> {
 
         if (targetListData) {
             if (targetListData.length >= List.maxLength)
-                throw new RangeError(`node.list().length() (${targetListData.length}) would exceed List.maxLength (16777216)`)
+                throw new RangeError(`node.list.length (${targetListData.length}) would exceed List.maxLength (16777216)`)
 
             // already prepended to node
             if (currentNodeData === targetNodeData.previous) return this
-
-            targetListData.length++
         } // create new list if node is not in one
         else {
             new List
@@ -180,9 +178,10 @@ export class ListNode<T> {
             currentListData.length--
         }
 
-        // prepend node
+        targetListData.length++
         currentNodeData.listData = targetListData
 
+        // prepend node
         if (targetNodeData.previous) {
             targetNodeData.previous.next = currentNodeData
             currentNodeData.previous = targetNodeData.previous
@@ -218,12 +217,10 @@ export class ListNode<T> {
 
         if (targetListData) {
             if (targetListData.length >= List.maxLength)
-                throw new RangeError(`node.list().length() (${targetListData.length}) would exceed List.maxLength (16777216)`)
+                throw new RangeError(`node.list.length (${targetListData.length}) would exceed List.maxLength (16777216)`)
 
             // already appended to node
             if (currentNodeData === targetNodeData.next) return this
-
-            targetListData.length++
         } // create new list if node is not in one
         else {
             new List
@@ -249,9 +246,11 @@ export class ListNode<T> {
             currentListData.length--
         }
 
-        // append node
+
+        targetListData.length++
         currentNodeData.listData = targetListData
 
+        // append
         if (targetNodeData.next) {
             targetNodeData.next.previous = currentNodeData
             currentNodeData.next = targetNodeData.next
@@ -260,8 +259,6 @@ export class ListNode<T> {
 
         currentNodeData.previous = targetNodeData
         targetNodeData.next = currentNodeData
-
-        targetListData.length++
 
         return this
     }
@@ -274,7 +271,7 @@ export class ListNode<T> {
      * @throws { TypeError } if list is not a List instance
      * @throws { RangeError } if list length would exceed List.maxLength (16777216)
      * @throws { TypeError } if index can not be converted to a number
-     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to list.length()
+     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to list.length
      */
     insertInto (list: List<T>, index = 0) {
         try { this.#data } catch (error) {
@@ -286,19 +283,19 @@ export class ListNode<T> {
             throw new TypeError(`list argument (${Object.prototype.toString.call(list)}) is not a List instance`)
 
         if (privateListData.length >= List.maxLength)
-            throw new RangeError(`list.length() (${privateListData.length}) + 1 would exceed List.maxLength (16777216)`)
+            throw new RangeError(`list.length (${privateListData.length}) + 1 would exceed List.maxLength (16777216)`)
 
         // convert to number
         index >>= 0
 
         if (index < 0 || index > privateListData.length)
-            throw new RangeError(`index argument (${index}) is not greater than or equal to 0 and less than or equal to list.length() ${privateListData.length}`)
+            throw new RangeError(`index argument (${index}) is not greater than or equal to 0 and less than or equal to list.length ${privateListData.length}`)
 
         let currentNodeData = this.#data
         const currentListData = currentNodeData.listData
 
-        // remove
-        if (currentListData !== null) {
+        // remove from current list
+        if (currentListData) {
             if (currentNodeData.previous)
                 currentNodeData.previous.next = currentNodeData.next
             else
@@ -338,7 +335,7 @@ export class ListNode<T> {
         else {
             let i: number
 
-            // forwards; Math.floor(list.length() / 2)
+            // forwards; Math.floor(list.length / 2)
             if (index < privateListData.length >>> 1) {
                 // skip first node
                 targetNodeData = (privateListData.first as ListNodeData<T>).next
@@ -365,8 +362,12 @@ export class ListNode<T> {
             }
         }
 
+        // already inserted into the list at the given index
+        if (currentNodeData === targetNodeData) return this
+
         privateListData.length++
 
+        // insert
         if (append) {
             if (targetNodeData.next) {
                 targetNodeData.next.previous = currentNodeData
@@ -680,7 +681,7 @@ export class List<T> {
      * @throws { TypeError } if this is not a List instance
      */
     get first () {
-        try { return (this.#data.first === null ? null : this.#data.first.node) } catch (error) {
+        try { return (this.#data.first?.node || null) } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
         }
     }
@@ -690,7 +691,7 @@ export class List<T> {
      * @throws { TypeError } if this is not a List instance
      */
     get last () {
-        try { return (this.#data.last === null ? null : this.#data.last.node) } catch (error) {
+        try { return (this.#data.last?.node || null) } catch (error) {
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a List instance`)
         }
     }
@@ -736,7 +737,7 @@ export class List<T> {
         else {
             let i: number
 
-            // forwards; Math.floor(this.length() / 2)
+            // forwards; Math.floor(this.length / 2)
             if (index < listData.length >>> 1) {
                 // skip first node
                 nodeData = listData.first.next
@@ -770,7 +771,7 @@ export class List<T> {
      * Insert the values to the front of this list and return this length.
      * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if list.length() would exceed List.maxLength (16777216)
+     * @throws { RangeError } if list.length would exceed List.maxLength (16777216)
      */
     unshift (...values: T[]) {
         try { this.#data } catch (error) {
@@ -780,7 +781,7 @@ export class List<T> {
         let listData = this.#data
 
         if (listData.length + values.length > List.maxLength)
-            throw new RangeError(`this().length() (${listData.length}) would exceed List.maxLength (16777216)`)
+            throw new RangeError(`this().length (${listData.length}) would exceed List.maxLength (16777216)`)
 
         if (values.length > 0) {
             let i = values.length - 1
@@ -800,14 +801,14 @@ export class List<T> {
             }
         }
 
-        return this.#data.length
+        return listData.length
     }
 
     /**
      * Insert the values to the end of this list and return this length.
      * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if list.length() would exceed List.maxLength (2 ** 24 - 1)
+     * @throws { RangeError } if list.length would exceed List.maxLength (2 ** 24 - 1)
      */
     push (...values: T[]) {
         try { this.#data } catch (error) {
@@ -817,7 +818,7 @@ export class List<T> {
         let listData = this.#data
 
         if (this.#data.length + values.length > List.maxLength)
-            throw new RangeError(`this().length() (${listData.length}) would exceed List.maxLength (16777216)`)
+            throw new RangeError(`this().length (${listData.length}) would exceed List.maxLength (16777216)`)
 
         if (values.length > 0) {
             let i = 0
@@ -833,11 +834,11 @@ export class List<T> {
             }
 
             for (i; i < values.length; i++) {
-                new ListNode(values[i], this.#data.last.node, true)
+                new ListNode(values[i], listData.last.node, true)
             }
         }
 
-        return this.#data.length
+        return listData.length
     }
 
     /**
@@ -846,8 +847,8 @@ export class List<T> {
      * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if index can not be converted to a number
-     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to this.length()
-     * @throws { RangeError } if this.length() would exceed List.maxLength (2 ** 24 - 1)
+     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to this.length
+     * @throws { RangeError } if this.length would exceed List.maxLength (2 ** 24 - 1)
      */
     insert (index = 0, ...values: T[]) {
         try { this.#data } catch (error) {
@@ -858,13 +859,13 @@ export class List<T> {
         const valuesLength = values.length
 
         if (listData.length + valuesLength > List.maxLength)
-            throw new RangeError(`this().length() (${listData.length}) would exceed List.maxLength (16777216)`)
+            throw new RangeError(`this().length (${listData.length}) would exceed List.maxLength (16777216)`)
 
         // convert to number
         index >>= 0
 
         if (index < 0 || index > listData.length)
-            throw new RangeError(`index argument (${index}) is not greater than or equal to 0 and less than or equal to this.length() (${listData.length})`)
+            throw new RangeError(`index argument (${index}) is not greater than or equal to 0 and less than or equal to this.length (${listData.length})`)
 
         let nodeData: ListNodeData<T>
         let append = false
@@ -895,7 +896,7 @@ export class List<T> {
         else {
             let i: number
 
-            // forwards; Math.floor(this.length() / 2)
+            // forwards; Math.floor(this.length / 2)
             if (index < listData.length >>> 1) {
                 // skip first node
                 nodeData = listData.first.next
@@ -1014,50 +1015,47 @@ export class List<T> {
 
         const listData = this.#data
 
-        index = Number(index)
+        index >>= 0
 
-        if (!Number.isInteger(index))
-            throw new RangeError(`index argument (${index}) is not an integer`)
-        else if (index < 0)
-            throw new RangeError(`index argument (${index}) is less than 0`)
-        else if (index > listData.length - 1)
-            throw new RangeError(`index argument (${index}) is greater than this.length() - 1`)
+        if (index < 0 || index > listData.length - 1)
+            throw new RangeError(`index argument (${index}) is not greater than or equal to 0 and less than this.length (${listData.length})`)
 
         let nodeData: ListNodeData<T> | null = null
 
+        // first node
         if (index === 0)
             nodeData = listData.first
+        // last node
         else if (index === listData.length - 1)
             nodeData = listData.last
+        // get target node; O (n / 2)
         else {
-            let forwards: boolean
             let i: number
 
-            // forwards
-            if (index < (listData.length) / 2) {
-                forwards = true
+            // forwards; Math.floor(list.length / 2)
+            if (index < (listData.length) >>> 1) {
                 nodeData = (listData.first as ListNodeData<T>).next as ListNodeData<T>
                 i = 1
-            // backwards
-            } else {
-                forwards = false
-                nodeData = (listData.last as ListNodeData<T>).previous as ListNodeData<T>
-                i = listData.length - 2
-            }
 
-            while (nodeData) {
-                if (index === i) {
-                    break
-                }
+                while (nodeData) {
+                    if (index === i) {
+                        break
+                    }
 
-                if (forwards) {
                     nodeData = nodeData.next as ListNodeData<T>
                     i++
-                } else {
+                }
+            } // backwards
+            else {
+                nodeData = (listData.last as ListNodeData<T>).previous as ListNodeData<T>
+                i = listData.length - 2
+
+                while (nodeData) {
+                    if (index === i) break
+
                     nodeData = nodeData.previous as ListNodeData<T>
                     i--
                 }
-                
             }
         }
 
@@ -1118,7 +1116,7 @@ export class List<T> {
      * @param end The position that along with start determines the range of nodes to move.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start or end can not be converted to a number
-     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length
      */
     splice (start: number, end: number): List<T>
 
@@ -1131,12 +1129,12 @@ export class List<T> {
      * @param end The position that along with start determines the range of nodes to move. (defualt 0)
      * @param target The position in list where the nodes will be inserted. (defualt 0)
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length
      * @throws { TypeError } if list is not a List instance
-     * @throws { RangeError } if list.length() would exceed List.maxLength (16777216)
+     * @throws { RangeError } if list.length would exceed List.maxLength (16777216)
      * @throws { TypeError } if target can not be converted to a number
      * @throws { RangeError } if target is not greater than or equal to 0
-     * and less than list.length() (minus number of nodes to be moved if list === this) + 1
+     * and less than list.length (minus number of nodes to be moved if list === this) + 1
      */
     splice (start: number, end: number, list: List<T>, target: number): List<T>
 
@@ -1151,13 +1149,13 @@ export class List<T> {
         start >>= 0
 
         if (start < 0 || start > currentListData.length - 1)
-            throw new RangeError(`start argument (${start}) is not greater than or equal to 0 and less than this.length() ${currentListData.length}`)
+            throw new RangeError(`start argument (${start}) is not greater than or equal to 0 and less than this.length ${currentListData.length}`)
 
         // end = Number.isNaN() ? end = 0 : end = Math.floor(Number(end))
         end >>= 0
 
         if (end < 0 || end > currentListData.length - 1)
-            throw new RangeError(`end argument (${end}) is not greater than or equal to 0 and less than this.length() ${currentListData.length}`)
+            throw new RangeError(`end argument (${end}) is not greater than or equal to 0 and less than this.length ${currentListData.length}`)
 
         const rangeLength = Math.abs(start - end) + 1
         let targetListData: ListData<T>
@@ -1170,7 +1168,7 @@ export class List<T> {
             targetListData = list.#data
 
             if (targetListData.length + rangeLength > List.maxLength)
-                throw new RangeError(`list.length() (${targetListData.length}) would be greater than List.maxLength (16777216)`)
+                throw new RangeError(`list.length (${targetListData.length}) would be greater than List.maxLength (16777216)`)
 
             const resultLength = currentListData === targetListData ? targetListData.length - rangeLength : targetListData.length
 
@@ -1178,7 +1176,7 @@ export class List<T> {
             target >>= 0
 
             if (target < 0 || target > resultLength)
-                throw new RangeError(`target argument (${target}) is not greater than or equal to 0 and less than or equal to list.length() minus number of nodes to be moved if list === this (${resultLength})`)
+                throw new RangeError(`target argument (${target}) is not greater than or equal to 0 and less than or equal to list.length minus number of nodes to be moved if list === this (${resultLength})`)
         } else {
             list = new List
             targetListData = list.#data
@@ -1193,7 +1191,6 @@ export class List<T> {
         }
 
         // direction to iterate is based on whether the range of start to end is closer to the first or last node
-        let forwards = start > currentListData.length - end - 1 ? false : true
         let startNodeData: ListNodeData<T> = null as any
         let endNodeData: ListNodeData<T> = null as any
         let currentNodeData: ListNodeData<T>| null = null
@@ -1201,7 +1198,7 @@ export class List<T> {
         let next: ListNodeData<T> | null = null
         let i: number
 
-        if (forwards) {
+        if (start < currentListData.length - end - 1) {
             currentNodeData = currentListData.first as ListNodeData<T>
             i = 0
 
@@ -1435,7 +1432,7 @@ export class List<T> {
      * or is the end of the range if true.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start, end or target can not be converted to a number
-     * @throws { TypeError } if start, end or target is not greater than or equal to 0 and less than this.length()
+     * @throws { TypeError } if start, end or target is not greater than or equal to 0 and less than this.length
      */
     copyWithin (start = 0, end = 0, target = 0, targetEnd = false) {
         try { this.#data } catch (error) {
@@ -1448,19 +1445,19 @@ export class List<T> {
         start >>= 0
 
         if (start < 0 || start > listData.length - 1)
-            throw new RangeError(`start argument (${start}) is not greater than or equal to 0 and less than this.length() (${listData.length})`)
+            throw new RangeError(`start argument (${start}) is not greater than or equal to 0 and less than this.length (${listData.length})`)
 
         // end = Number.isNaN() ? end = 0 : end = Math.floor(Number(end))
         end >>= 0
 
         if (end < 0 || end > listData.length - 1)
-            throw new RangeError(`end argument (${end}) is not greater than or equal to 0 and less than this.length() (${listData.length})`)
+            throw new RangeError(`end argument (${end}) is not greater than or equal to 0 and less than this.length (${listData.length})`)
 
         // target = Number.isNaN() ? target = 0 : target = Math.floor(Number(target))
         target >>= 0
 
         if (target < 0 || target > listData.length - 1)
-            throw new RangeError(`target argument (${target}) is not greater than or equal to 0 and less than this.length() (${listData.length})`)
+            throw new RangeError(`target argument (${target}) is not greater than or equal to 0 and less than this.length (${listData.length})`)
 
         // start = Math.min(start, end); end = Math.max(start, end)
         if (end < start) {
@@ -1491,7 +1488,7 @@ export class List<T> {
             targetNodeData = listData.last
         // get target node; O (n / 2)
         else {
-            // forwards; Math.floor(this.length() / 2)
+            // forwards; Math.floor(this.length / 2)
             if (target < listData.length >>> 1) {
                 // skip first node
                 currentNodeData = listData.first.next
@@ -1647,7 +1644,7 @@ export class List<T> {
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if depth can not be converted to a number
      * @throws { RangeError } if depth is not greater than 0
-     * @throws { RangeError } if this.length() would exceed List.maxLength (16777216)
+     * @throws { RangeError } if this.length would exceed List.maxLength (16777216)
      */
     flat (depth = 1) {
         try { this.#data } catch (error) {
@@ -1678,7 +1675,7 @@ export class List<T> {
 
                     continue callStack
                 } else {
-                    if (++i > List.maxLength) throw new RangeError(`this.length() (${i}) would exceed List.maxLength (16777216)`)
+                    if (++i > List.maxLength) throw new RangeError(`this.length (${i}) would exceed List.maxLength (16777216)`)
                 }
     
                 nodeData = data.nodeData
@@ -1727,10 +1724,10 @@ export class List<T> {
      * The range is defined by Math.min(start, end) to Math.max(start, end).
      * Therefore start or end can be the higher index, (List instance).slice(start, end) and (List instance).slice(end, start) are the same operation.
      * @param start default 0
-     * @param end default this.length() - 1
+     * @param end default this.length - 1
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start or end can not be converted to a number
-     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length
      */
     slice (start = 0, end = this.#data.length - 1) {
         try { this.#data } catch (error) {
@@ -1743,18 +1740,15 @@ export class List<T> {
         start >>= 0
 
         if (start < 0 || start > currentListData.length - 1)
-            throw new RangeError(`start argument (${start}) is not greater than or equal to 0 and less than this.length() (${currentListData.length})`)
+            throw new RangeError(`start argument (${start}) is not greater than or equal to 0 and less than this.length (${currentListData.length})`)
 
         // end = Number.isNaN() ? end = 0 : end = Math.floor(Number(end))
         end >>= 0
 
         if (end < 0 || end > currentListData.length - 1)
-            throw new RangeError(`end argument (${end}) is not greater than or equal to 0 and less than this.length() (${currentListData.length})`)
+            throw new RangeError(`end argument (${end}) is not greater than or equal to 0 and less than this.length (${currentListData.length})`)
 
         new List
-
-        if (currentListData.length === 0)
-            return privateListData.list as List<T>
 
         // start = Math.min(start, end); end = Math.max(start, end)
         if (end < start) {

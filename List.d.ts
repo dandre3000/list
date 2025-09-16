@@ -15,7 +15,7 @@ export declare class ListNode<T> {
      * @param node The node that will be appended or prepended with this.
      * @param append If the append argument is truthy then append this to node else prepend this to node. (default false)
      * @throws { TypeError } if node is not a ListNode instance
-     * @throws { RangeError } if node.list().length() would exceed List.maxLength
+     * @throws { RangeError } if node.list.length would exceed List.maxLength
      */
     constructor(value: T, node: ListNode<T>, append?: any);
     /**
@@ -39,7 +39,7 @@ export declare class ListNode<T> {
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this
-     * @throws { RangeError } if node.list().length() would exceed List.maxLength (16777216)
+     * @throws { RangeError } if node.list.length would exceed List.maxLength (16777216)
      */
     prependTo(node: ListNode<T>): this;
     /**
@@ -58,7 +58,7 @@ export declare class ListNode<T> {
      * @throws { TypeError } if list is not a List instance
      * @throws { RangeError } if list length would exceed List.maxLength (16777216)
      * @throws { TypeError } if index can not be converted to a number
-     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to list.length()
+     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to list.length
      */
     insertInto(list: List<T>, index?: number): this;
     /**
@@ -154,14 +154,14 @@ export declare class List<T> {
      * Insert the values to the front of this list and return this length.
      * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if list.length() would exceed List.maxLength (16777216)
+     * @throws { RangeError } if list.length would exceed List.maxLength (16777216)
      */
     unshift(...values: T[]): number;
     /**
      * Insert the values to the end of this list and return this length.
      * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if list.length() would exceed List.maxLength (2 ** 24 - 1)
+     * @throws { RangeError } if list.length would exceed List.maxLength (2 ** 24 - 1)
      */
     push(...values: T[]): number;
     /**
@@ -170,8 +170,8 @@ export declare class List<T> {
      * @param values The values to be inserted.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if index can not be converted to a number
-     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to this.length()
-     * @throws { RangeError } if this.length() would exceed List.maxLength (2 ** 24 - 1)
+     * @throws { RangeError } if index is not greater than or equal to 0 and less than or equal to this.length
+     * @throws { RangeError } if this.length would exceed List.maxLength (2 ** 24 - 1)
      */
     insert(index?: number, ...values: T[]): number;
     /**
@@ -205,7 +205,7 @@ export declare class List<T> {
      * @param end The position that along with start determines the range of nodes to move.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start or end can not be converted to a number
-     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length
      */
     splice(start: number, end: number): List<T>;
     /**
@@ -217,12 +217,12 @@ export declare class List<T> {
      * @param end The position that along with start determines the range of nodes to move. (defualt 0)
      * @param target The position in list where the nodes will be inserted. (defualt 0)
      * @throws { TypeError } if this is not a List instance
-     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length
      * @throws { TypeError } if list is not a List instance
-     * @throws { RangeError } if list.length() would exceed List.maxLength (16777216)
+     * @throws { RangeError } if list.length would exceed List.maxLength (16777216)
      * @throws { TypeError } if target can not be converted to a number
      * @throws { RangeError } if target is not greater than or equal to 0
-     * and less than list.length() (minus number of nodes to be moved if list === this) + 1
+     * and less than list.length (minus number of nodes to be moved if list === this) + 1
      */
     splice(start: number, end: number, list: List<T>, target: number): List<T>;
     /**
@@ -246,7 +246,7 @@ export declare class List<T> {
      * or is the end of the range if true.
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start, end or target can not be converted to a number
-     * @throws { TypeError } if start, end or target is not greater than or equal to 0 and less than this.length()
+     * @throws { TypeError } if start, end or target is not greater than or equal to 0 and less than this.length
      */
     copyWithin(start?: number, end?: number, target?: number, targetEnd?: boolean): this;
     /**
@@ -272,7 +272,7 @@ export declare class List<T> {
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if depth can not be converted to a number
      * @throws { RangeError } if depth is not greater than 0
-     * @throws { RangeError } if this.length() would exceed List.maxLength (16777216)
+     * @throws { RangeError } if this.length would exceed List.maxLength (16777216)
      */
     flat(depth?: number): this;
     /**
@@ -280,10 +280,10 @@ export declare class List<T> {
      * The range is defined by Math.min(start, end) to Math.max(start, end).
      * Therefore start or end can be the higher index, (List instance).slice(start, end) and (List instance).slice(end, start) are the same operation.
      * @param start default 0
-     * @param end default this.length() - 1
+     * @param end default this.length - 1
      * @throws { TypeError } if this is not a List instance
      * @throws { TypeError } if start or end can not be converted to a number
-     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length()
+     * @throws { RangeError } if start or end is not greater than or equal to 0 and less than this.length
      */
     slice(start?: number, end?: number): List<T>;
     /**
