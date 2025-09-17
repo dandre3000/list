@@ -1,7 +1,7 @@
 import { clear, getEntries, mark, stop } from 'marky'
 // package with high downloads that exports a linked list node class
 import { List as LinkedList, Item } from 'linked-list'
-import { ListNode } from './List.js'
+import { ListNode } from './List.ts'
 
 class MyItem extends Item {
     constructor (value) {

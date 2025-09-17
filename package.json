@@ -13,9 +13,6 @@
         "linked-list",
         "doubly-linked-list",
         "data-structure",
-        "typescript",
-        "array",
-        "node",
         "collection",
         "iterable",
         "datastructure"
@@ -25,9 +22,9 @@
     "types": "./List.d.ts",
     "scripts": {
         "build": "bun build --entrypoints List.ts --outdir ./ --minify --keep-names",
-        "types": "tsc",
-        "test": "bun test",
-        "performance": "bun performance.js"
+        "performance": "bun performance.js",
+        "prepare": "bun run build && tsc",
+        "prepublishOnly": "bun test"
     },
     "devDependencies": {
         "@types/bun": "^1.2.22",

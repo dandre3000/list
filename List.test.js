@@ -1,4 +1,4 @@
-import { List, ListNode } from './List.js'
+import { List, ListNode } from './List.ts'
 import { expect, test } from 'bun:test'
 
 test(`List[Symbol.hasInstance]`, () => {
@@ -784,12 +784,10 @@ test('List.prototype.copyWithin', () => {
 
     // targetEnd = true
     list = new List(...values).copyWithin(start, end, index, true)
-    console.log(start, end, index, list.toString(), values.toString())
     i = 0
     j = 0
     for (const { value } of list) {
         if (i >= index - Math.abs(start - end) && i <= index) {
-            console.log(i, Math.max(start, end) - (index - i))
             expect(value).toBe(values[Math.max(start, end) - (index - i)])
             j++
         } else
