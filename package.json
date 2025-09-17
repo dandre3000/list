@@ -1,13 +1,13 @@
 {
     "name": "@dandre3000/list",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "license": "MIT",
     "author": {
         "name": "DeAundre Payne",
         "email": "apps.fondling796@passinbox.com",
         "url": "https://github.com/dandre3000/list"
     },
-    "description": "Doubly linked list class and node class.",
+    "description": "A double linked list class with an API similar to the Array class and a corresponding list node class.",
     "keywords": [
         "list",
         "linked-list",

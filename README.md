@@ -1,6 +1,6 @@
 # list
 
-Exports a `List` class that represents a doubly linked list with methods based on the `Array` class, and a `ListNode` class that represents a node that may be contained in a `List`.
+Exports a `List` class that represents a double linked list with an API based on the `Array` class, and a `ListNode` class that represents a node that may be contained in a `List`.
 
 ## Installation
 
