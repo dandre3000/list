@@ -11,7 +11,7 @@ class MyItem extends Item {
     }
 }
 
-const values = new Array(1000).fill(0).map(Math.random)
+const values = new Array(10e4 * 2.5).fill(0).map(Math.random)
 const nodes = []
 const items = []
 

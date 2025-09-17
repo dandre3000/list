@@ -1,1 +1,4 @@
 node_modules/
+untracked/
+List.d.ts
+List.js
