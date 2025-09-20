@@ -128,6 +128,7 @@ export class ListNode<T> {
 
     /**
      * Remove this node from its containing list and prepend it to another node.
+     * Creates a new list to contain both nodes if node.list === null.
      * @param node The node that will be prepended with this.
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if node is not a ListNode instance
@@ -196,6 +197,7 @@ export class ListNode<T> {
 
     /**
      * Remove this node from its containing list and append it to another node.
+     * Creates a new list to contain both nodes if node.list === null.
      * @throws { TypeError } if this is not a ListNode instance
      * @throws { TypeError } if node is not a ListNode instance
      * @throws { ReferenceError } if node === this

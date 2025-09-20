@@ -13,10 +13,8 @@ npm install @dandre3000/list
 ```js
 import { List, ListNode } from '@dandre3000/list'
 
-// Create a new list
-const list = new List(1, 2, 3)
-
 // Add values
+const list = new List(1, 2, 3)
 list.push(4, 5)
 list.unshift(0)
 
@@ -24,9 +22,9 @@ list.unshift(0)
 list.pop()
 list.shift()
 
-// Iterate list values
+// Iterate values
 for (const node of list) {
-  console.log(node)
+  console.log(node.value) // 1, 2, 3, 4
 }
 
 // Access nodes
@@ -35,8 +33,17 @@ const lastNode = list.last
 const nodeAt2 = list.at(2)
 
 // Node operations
-const nodeAt1 = firstNode.next
-nodeAt1 === lastNode.previous // true
+console.log(nodeAt2 === lastNode.previous) // true
+new ListNode(6).appendTo(lastNode)
+
+// Iterative methods
+list.filter(({ value }) => value & 1 ^ 1)
+.map(({ value }) => value * 2)
+
+// Conversion methods
+list.nodes()
+list.values()
+console.log(list.toString()) // 2,6
 ```
 
 ## API
