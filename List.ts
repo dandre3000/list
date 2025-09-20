@@ -27,7 +27,7 @@ export class ListNode<T> {
      * Create a ListNode instance.
      * @param value The value this node will contain.
      */
-    constructor (value: T)
+    constructor (value?: T)
 
     /**
      * Create a ListNode instance and append or prepend it to another node.
